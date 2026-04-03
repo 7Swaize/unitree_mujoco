@@ -1,0 +1,7 @@
+width: 80
+height: 60
+crop_left: 8
+far_clip: 2.0
+near_clip: 0.175
+
+depth_dt: 0.1

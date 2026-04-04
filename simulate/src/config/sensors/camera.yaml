@@ -3,8 +3,10 @@
 res_x: 620
 res_y: 480
 
-far_clip: 2.0
-near_clip: 0.175
+# These are the default clipping planes set by the simulation.
+# NOTE: This affects the clipping planes on ALL cameras.
+far_clip: 50
+near_clip: 0.01
 
 # It won't publish at exactly input fps, rather plus or minus 1-2 frames.  
 publish_fps: 60

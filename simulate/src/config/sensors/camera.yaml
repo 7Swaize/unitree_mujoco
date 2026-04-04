@@ -1,7 +1,10 @@
-width: 80
-height: 60
-crop_left: 8
+# 'res_x' and 'res_y' defines the physical resolution of the image buffer.
+# So, it determines how many pixels to draw per frame capture.
+res_x: 620
+res_y: 480
+
 far_clip: 2.0
 near_clip: 0.175
 
-depth_dt: 0.1
+# It won't publish at exactly input fps, rather plus or minus 1-2 frames.  
+publish_fps: 60

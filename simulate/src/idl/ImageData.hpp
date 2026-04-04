@@ -6,8 +6,8 @@
   Cyclone DDS: v11.0.1
 
 *****************************************************************/
-#ifndef DDSCXX_IMAGEDATA_HPP_CA7C3B0343AABF7B4615481762B83239
-#define DDSCXX_IMAGEDATA_HPP_CA7C3B0343AABF7B4615481762B83239
+#ifndef DDSCXX_IMAGEDATA_HPP_AB0B935CF7FBB61D6D463BDF277AEE0A
+#define DDSCXX_IMAGEDATA_HPP_AB0B935CF7FBB61D6D463BDF277AEE0A
 
 #include <utility>
 #include <ostream>
@@ -20,33 +20,36 @@ namespace sim_msgs
 class ImageData
 {
 private:
- uint32_t width_ = 0;
- uint32_t height_ = 0;
+ uint32_t res_x_ = 0;
+ uint32_t res_y_ = 0;
  uint32_t stride_ = 0;
  std::string encoding_;
- std::vector<uint8_t> data_;
+ std::vector<uint8_t> rgb_data_;
+ std::vector<uint8_t> depth_data_;
 
 public:
   ImageData() = default;
 
   explicit ImageData(
-    uint32_t width,
-    uint32_t height,
+    uint32_t res_x,
+    uint32_t res_y,
     uint32_t stride,
     const std::string& encoding,
-    const std::vector<uint8_t>& data) :
-    width_(width),
-    height_(height),
+    const std::vector<uint8_t>& rgb_data,
+    const std::vector<uint8_t>& depth_data) :
+    res_x_(res_x),
+    res_y_(res_y),
     stride_(stride),
     encoding_(encoding),
-    data_(data) { }
+    rgb_data_(rgb_data),
+    depth_data_(depth_data) { }
 
-  uint32_t width() const { return this->width_; }
-  uint32_t& width() { return this->width_; }
-  void width(uint32_t _val_) { this->width_ = _val_; }
-  uint32_t height() const { return this->height_; }
-  uint32_t& height() { return this->height_; }
-  void height(uint32_t _val_) { this->height_ = _val_; }
+  uint32_t res_x() const { return this->res_x_; }
+  uint32_t& res_x() { return this->res_x_; }
+  void res_x(uint32_t _val_) { this->res_x_ = _val_; }
+  uint32_t res_y() const { return this->res_y_; }
+  uint32_t& res_y() { return this->res_y_; }
+  void res_y(uint32_t _val_) { this->res_y_ = _val_; }
   uint32_t stride() const { return this->stride_; }
   uint32_t& stride() { return this->stride_; }
   void stride(uint32_t _val_) { this->stride_ = _val_; }
@@ -54,19 +57,24 @@ public:
   std::string& encoding() { return this->encoding_; }
   void encoding(const std::string& _val_) { this->encoding_ = _val_; }
   void encoding(std::string&& _val_) { this->encoding_ = std::move(_val_); }
-  const std::vector<uint8_t>& data() const { return this->data_; }
-  std::vector<uint8_t>& data() { return this->data_; }
-  void data(const std::vector<uint8_t>& _val_) { this->data_ = _val_; }
-  void data(std::vector<uint8_t>&& _val_) { this->data_ = std::move(_val_); }
+  const std::vector<uint8_t>& rgb_data() const { return this->rgb_data_; }
+  std::vector<uint8_t>& rgb_data() { return this->rgb_data_; }
+  void rgb_data(const std::vector<uint8_t>& _val_) { this->rgb_data_ = _val_; }
+  void rgb_data(std::vector<uint8_t>&& _val_) { this->rgb_data_ = std::move(_val_); }
+  const std::vector<uint8_t>& depth_data() const { return this->depth_data_; }
+  std::vector<uint8_t>& depth_data() { return this->depth_data_; }
+  void depth_data(const std::vector<uint8_t>& _val_) { this->depth_data_ = _val_; }
+  void depth_data(std::vector<uint8_t>&& _val_) { this->depth_data_ = std::move(_val_); }
 
   bool operator==(const ImageData& _other) const
   {
     (void) _other;
-    return width_ == _other.width_ &&
-      height_ == _other.height_ &&
+    return res_x_ == _other.res_x_ &&
+      res_y_ == _other.res_y_ &&
       stride_ == _other.stride_ &&
       encoding_ == _other.encoding_ &&
-      data_ == _other.data_;
+      rgb_data_ == _other.rgb_data_ &&
+      depth_data_ == _other.depth_data_;
   }
 
   bool operator!=(const ImageData& _other) const
@@ -104,44 +112,48 @@ template <> constexpr bool TopicTraits<::sim_msgs::ImageData>::isKeyless()
 }
 
 #ifdef DDSCXX_HAS_TYPELIB
-template<> constexpr unsigned int TopicTraits<::sim_msgs::ImageData>::type_map_blob_sz() { return 378; }
+template<> constexpr unsigned int TopicTraits<::sim_msgs::ImageData>::type_map_blob_sz() { return 434; }
 template<> constexpr unsigned int TopicTraits<::sim_msgs::ImageData>::type_info_blob_sz() { return 100; }
 template<> inline const uint8_t * TopicTraits<::sim_msgs::ImageData>::type_map_blob() {
   alignas(4) static const uint8_t blob[] = {
- 0x80,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0xf1,  0xbf,  0x6e,  0x0a,  0xac,  0xed,  0xaa,  0x00, 
- 0x5b,  0x0e,  0xbc,  0xad,  0x8d,  0x16,  0xae,  0x00,  0x68,  0x00,  0x00,  0x00,  0xf1,  0x51,  0x01,  0x00, 
- 0x01,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x58,  0x00,  0x00,  0x00,  0x05,  0x00,  0x00,  0x00, 
- 0x0b,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0xea,  0xae,  0x26,  0xa6,  0x00, 
- 0x0b,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0xb4,  0x35,  0xe2,  0x27,  0x00, 
+ 0x94,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0xf1,  0x21,  0xf2,  0x2c,  0x51,  0x4d,  0x61,  0xbf, 
+ 0xfb,  0x95,  0xad,  0x5e,  0xa0,  0x75,  0x88,  0x00,  0x7c,  0x00,  0x00,  0x00,  0xf1,  0x51,  0x01,  0x00, 
+ 0x01,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x6c,  0x00,  0x00,  0x00,  0x06,  0x00,  0x00,  0x00, 
+ 0x0b,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x60,  0xe4,  0x9f,  0xa9,  0x00, 
+ 0x0b,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x6c,  0x7e,  0x1f,  0xa5,  0x00, 
  0x0b,  0x00,  0x00,  0x00,  0x02,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x47,  0x10,  0x13,  0x75,  0x00, 
  0x0c,  0x00,  0x00,  0x00,  0x03,  0x00,  0x00,  0x00,  0x01,  0x00,  0x70,  0x00,  0x84,  0xbe,  0xa1,  0xf0, 
  0x10,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00,  0x01,  0x00,  0x80,  0xf3,  0x01,  0x00,  0x00,  0x0d, 
- 0x8d,  0x77,  0x7f,  0x38,  0xcb,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0xf2,  0x96,  0x3e,  0xb3, 
- 0x1f,  0x5e,  0x83,  0x52,  0xe8,  0x9e,  0x66,  0x1f,  0x55,  0x92,  0x6d,  0x00,  0xb3,  0x00,  0x00,  0x00, 
- 0xf2,  0x51,  0x01,  0x00,  0x1c,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x14,  0x00,  0x00,  0x00, 
- 0x73,  0x69,  0x6d,  0x5f,  0x6d,  0x73,  0x67,  0x73,  0x3a,  0x3a,  0x49,  0x6d,  0x61,  0x67,  0x65,  0x44, 
- 0x61,  0x74,  0x61,  0x00,  0x8b,  0x00,  0x00,  0x00,  0x05,  0x00,  0x00,  0x00,  0x14,  0x00,  0x00,  0x00, 
- 0x00,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x00,  0x06,  0x00,  0x00,  0x00,  0x77,  0x69,  0x64,  0x74, 
- 0x68,  0x00,  0x00,  0x00,  0x15,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x00, 
- 0x07,  0x00,  0x00,  0x00,  0x68,  0x65,  0x69,  0x67,  0x68,  0x74,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00, 
+ 0x05,  0xb3,  0xb8,  0x6e,  0x10,  0x00,  0x00,  0x00,  0x05,  0x00,  0x00,  0x00,  0x01,  0x00,  0x80,  0xf3, 
+ 0x01,  0x00,  0x00,  0x0d,  0x8b,  0x23,  0xb6,  0xa5,  0xed,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00, 
+ 0xf2,  0x7f,  0x8e,  0x0e,  0x23,  0xee,  0x38,  0x24,  0xc0,  0x0b,  0x20,  0x1b,  0xc5,  0x2d,  0xe5,  0x00, 
+ 0xd5,  0x00,  0x00,  0x00,  0xf2,  0x51,  0x01,  0x00,  0x1c,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00, 
+ 0x14,  0x00,  0x00,  0x00,  0x73,  0x69,  0x6d,  0x5f,  0x6d,  0x73,  0x67,  0x73,  0x3a,  0x3a,  0x49,  0x6d, 
+ 0x61,  0x67,  0x65,  0x44,  0x61,  0x74,  0x61,  0x00,  0xad,  0x00,  0x00,  0x00,  0x06,  0x00,  0x00,  0x00, 
+ 0x14,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x00,  0x06,  0x00,  0x00,  0x00, 
+ 0x72,  0x65,  0x73,  0x5f,  0x78,  0x00,  0x00,  0x00,  0x14,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00, 
+ 0x01,  0x00,  0x07,  0x00,  0x06,  0x00,  0x00,  0x00,  0x72,  0x65,  0x73,  0x5f,  0x79,  0x00,  0x00,  0x00, 
  0x15,  0x00,  0x00,  0x00,  0x02,  0x00,  0x00,  0x00,  0x01,  0x00,  0x07,  0x00,  0x07,  0x00,  0x00,  0x00, 
  0x73,  0x74,  0x72,  0x69,  0x64,  0x65,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x17,  0x00,  0x00,  0x00, 
  0x03,  0x00,  0x00,  0x00,  0x01,  0x00,  0x70,  0x00,  0x09,  0x00,  0x00,  0x00,  0x65,  0x6e,  0x63,  0x6f, 
- 0x64,  0x69,  0x6e,  0x67,  0x00,  0x00,  0x00,  0x00,  0x17,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
- 0x01,  0x00,  0x80,  0xf3,  0x01,  0x00,  0x00,  0x0d,  0x05,  0x00,  0x00,  0x00,  0x64,  0x61,  0x74,  0x61, 
- 0x00,  0x00,  0x00,  0x00,  0x22,  0x00,  0x00,  0x00,  0x01,  0x00,  0x00,  0x00,  0xf2,  0x96,  0x3e,  0xb3, 
- 0x1f,  0x5e,  0x83,  0x52,  0xe8,  0x9e,  0x66,  0x1f,  0x55,  0x92,  0x6d,  0xf1,  0xbf,  0x6e,  0x0a,  0xac, 
- 0xed,  0xaa,  0x00,  0x5b,  0x0e,  0xbc,  0xad,  0x8d,  0x16,  0xae, };
+ 0x64,  0x69,  0x6e,  0x67,  0x00,  0x00,  0x00,  0x00,  0x1b,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
+ 0x01,  0x00,  0x80,  0xf3,  0x01,  0x00,  0x00,  0x0d,  0x09,  0x00,  0x00,  0x00,  0x72,  0x67,  0x62,  0x5f, 
+ 0x64,  0x61,  0x74,  0x61,  0x00,  0x00,  0x00,  0x00,  0x1d,  0x00,  0x00,  0x00,  0x05,  0x00,  0x00,  0x00, 
+ 0x01,  0x00,  0x80,  0xf3,  0x01,  0x00,  0x00,  0x0d,  0x0b,  0x00,  0x00,  0x00,  0x64,  0x65,  0x70,  0x74, 
+ 0x68,  0x5f,  0x64,  0x61,  0x74,  0x61,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x22,  0x00,  0x00,  0x00, 
+ 0x01,  0x00,  0x00,  0x00,  0xf2,  0x7f,  0x8e,  0x0e,  0x23,  0xee,  0x38,  0x24,  0xc0,  0x0b,  0x20,  0x1b, 
+ 0xc5,  0x2d,  0xe5,  0xf1,  0x21,  0xf2,  0x2c,  0x51,  0x4d,  0x61,  0xbf,  0xfb,  0x95,  0xad,  0x5e,  0xa0, 
+ 0x75,  0x88, };
   return blob;
 }
 template<> inline const uint8_t * TopicTraits<::sim_msgs::ImageData>::type_info_blob() {
   alignas(4) static const uint8_t blob[] = {
  0x60,  0x00,  0x00,  0x00,  0x01,  0x10,  0x00,  0x40,  0x28,  0x00,  0x00,  0x00,  0x24,  0x00,  0x00,  0x00, 
- 0x14,  0x00,  0x00,  0x00,  0xf1,  0xbf,  0x6e,  0x0a,  0xac,  0xed,  0xaa,  0x00,  0x5b,  0x0e,  0xbc,  0xad, 
- 0x8d,  0x16,  0xae,  0x00,  0x6c,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
+ 0x14,  0x00,  0x00,  0x00,  0xf1,  0x21,  0xf2,  0x2c,  0x51,  0x4d,  0x61,  0xbf,  0xfb,  0x95,  0xad,  0x5e, 
+ 0xa0,  0x75,  0x88,  0x00,  0x80,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
  0x00,  0x00,  0x00,  0x00,  0x02,  0x10,  0x00,  0x40,  0x28,  0x00,  0x00,  0x00,  0x24,  0x00,  0x00,  0x00, 
- 0x14,  0x00,  0x00,  0x00,  0xf2,  0x96,  0x3e,  0xb3,  0x1f,  0x5e,  0x83,  0x52,  0xe8,  0x9e,  0x66,  0x1f, 
- 0x55,  0x92,  0x6d,  0x00,  0xb7,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
+ 0x14,  0x00,  0x00,  0x00,  0xf2,  0x7f,  0x8e,  0x0e,  0x23,  0xee,  0x38,  0x24,  0xc0,  0x0b,  0x20,  0x1b, 
+ 0xc5,  0x2d,  0xe5,  0x00,  0xd9,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x04,  0x00,  0x00,  0x00, 
  0x00,  0x00,  0x00,  0x00, };
   return blob;
 }
@@ -194,7 +206,7 @@ bool write(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prop
       case 0:
       if (!streamer.start_member(*prop))
         return false;
-      if (!write(streamer, instance.width()))
+      if (!write(streamer, instance.res_x()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -202,7 +214,7 @@ bool write(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prop
       case 1:
       if (!streamer.start_member(*prop))
         return false;
-      if (!write(streamer, instance.height()))
+      if (!write(streamer, instance.res_y()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -229,11 +241,29 @@ bool write(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prop
       if (!streamer.start_consecutive(false, true))
         return false;
       {
-      uint32_t se_1 = uint32_t(instance.data().size());
+      uint32_t se_1 = uint32_t(instance.rgb_data().size());
       if (!write(streamer, se_1))
         return false;
       if (se_1 > 0 &&
-          !write(streamer, instance.data()[0], se_1))
+          !write(streamer, instance.rgb_data()[0], se_1))
+        return false;
+      }  //end sequence 1
+      if (!streamer.finish_consecutive())
+        return false;
+      if (!streamer.finish_member(*prop, member_ids))
+        return false;
+      break;
+      case 5:
+      if (!streamer.start_member(*prop))
+        return false;
+      if (!streamer.start_consecutive(false, true))
+        return false;
+      {
+      uint32_t se_1 = uint32_t(instance.depth_data().size());
+      if (!write(streamer, se_1))
+        return false;
+      if (se_1 > 0 &&
+          !write(streamer, instance.depth_data()[0], se_1))
         return false;
       }  //end sequence 1
       if (!streamer.finish_consecutive())
@@ -266,7 +296,7 @@ bool read(T& streamer, ::sim_msgs::ImageData& instance, const entity_properties_
       case 0:
       if (!streamer.start_member(*prop))
         return false;
-      if (!read(streamer, instance.width()))
+      if (!read(streamer, instance.res_x()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -274,7 +304,7 @@ bool read(T& streamer, ::sim_msgs::ImageData& instance, const entity_properties_
       case 1:
       if (!streamer.start_member(*prop))
         return false;
-      if (!read(streamer, instance.height()))
+      if (!read(streamer, instance.res_y()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -301,12 +331,31 @@ bool read(T& streamer, ::sim_msgs::ImageData& instance, const entity_properties_
       if (!streamer.start_consecutive(false, true))
         return false;
       {
-      uint32_t se_1 = uint32_t(instance.data().size());
+      uint32_t se_1 = uint32_t(instance.rgb_data().size());
       if (!read(streamer, se_1))
         return false;
-      instance.data().resize(se_1);
+      instance.rgb_data().resize(se_1);
       if (se_1 > 0 &&
-          !read(streamer, instance.data()[0], se_1))
+          !read(streamer, instance.rgb_data()[0], se_1))
+        return false;
+      }  //end sequence 1
+      if (!streamer.finish_consecutive())
+        return false;
+      if (!streamer.finish_member(*prop, member_ids))
+        return false;
+      break;
+      case 5:
+      if (!streamer.start_member(*prop))
+        return false;
+      if (!streamer.start_consecutive(false, true))
+        return false;
+      {
+      uint32_t se_1 = uint32_t(instance.depth_data().size());
+      if (!read(streamer, se_1))
+        return false;
+      instance.depth_data().resize(se_1);
+      if (se_1 > 0 &&
+          !read(streamer, instance.depth_data()[0], se_1))
         return false;
       }  //end sequence 1
       if (!streamer.finish_consecutive())
@@ -339,7 +388,7 @@ bool move(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prope
       case 0:
       if (!streamer.start_member(*prop))
         return false;
-      if (!move(streamer, instance.width()))
+      if (!move(streamer, instance.res_x()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -347,7 +396,7 @@ bool move(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prope
       case 1:
       if (!streamer.start_member(*prop))
         return false;
-      if (!move(streamer, instance.height()))
+      if (!move(streamer, instance.res_y()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -374,7 +423,26 @@ bool move(T& streamer, const ::sim_msgs::ImageData& instance, const entity_prope
       if (!streamer.start_consecutive(false, true))
         return false;
       {
-      uint32_t se_1 = uint32_t(instance.data().size());
+      uint32_t se_1 = uint32_t(instance.rgb_data().size());
+      if (!move(streamer, se_1))
+        return false;
+      
+      if (se_1 > 0 &&
+          !move(streamer, uint8_t(), se_1))
+        return false;
+      }  //end sequence 1
+      if (!streamer.finish_consecutive())
+        return false;
+      if (!streamer.finish_member(*prop, member_ids))
+        return false;
+      break;
+      case 5:
+      if (!streamer.start_member(*prop))
+        return false;
+      if (!streamer.start_consecutive(false, true))
+        return false;
+      {
+      uint32_t se_1 = uint32_t(instance.depth_data().size());
       if (!move(streamer, se_1))
         return false;
       
@@ -412,7 +480,7 @@ bool max(T& streamer, const ::sim_msgs::ImageData& instance, const entity_proper
       case 0:
       if (!streamer.start_member(*prop))
         return false;
-      if (!max(streamer, instance.width()))
+      if (!max(streamer, instance.res_x()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -420,7 +488,7 @@ bool max(T& streamer, const ::sim_msgs::ImageData& instance, const entity_proper
       case 1:
       if (!streamer.start_member(*prop))
         return false;
-      if (!max(streamer, instance.height()))
+      if (!max(streamer, instance.res_y()))
         return false;
       if (!streamer.finish_member(*prop, member_ids))
         return false;
@@ -461,6 +529,26 @@ bool max(T& streamer, const ::sim_msgs::ImageData& instance, const entity_proper
       if (!streamer.finish_member(*prop, member_ids))
         return false;
       break;
+      case 5:
+      if (!streamer.start_member(*prop))
+        return false;
+      if (!streamer.start_consecutive(false, true))
+        return false;
+      {
+      uint32_t se_1 = 0;
+      if (!max(streamer, se_1))
+        return false;
+      // coverity[dead_error_line]
+      if (se_1 > 0 &&
+          !max(streamer, uint8_t(), se_1))
+        return false;
+      }  //end sequence 1
+      if (!streamer.finish_consecutive())
+        return false;
+      streamer.position(SIZE_MAX);
+      if (!streamer.finish_member(*prop, member_ids))
+        return false;
+      break;
     }
     prop = streamer.next_entity(prop);
   }
@@ -480,4 +568,4 @@ bool max(S& str, const ::sim_msgs::ImageData& instance, key_mode key) {
 } //namespace eclipse
 } //namespace org
 
-#endif // DDSCXX_IMAGEDATA_HPP_CA7C3B0343AABF7B4615481762B83239
+#endif // DDSCXX_IMAGEDATA_HPP_AB0B935CF7FBB61D6D463BDF277AEE0A

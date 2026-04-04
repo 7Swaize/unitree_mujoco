@@ -16,11 +16,12 @@ std::ostream& operator<<(std::ostream& os, ::sim_msgs::ImageData const& rhs)
 {
   (void) rhs;
   os << "[";
-  os << "width: " << rhs.width();
-  os << ", height: " << rhs.height();
+  os << "res_x: " << rhs.res_x();
+  os << ", res_y: " << rhs.res_y();
   os << ", stride: " << rhs.stride();
   os << ", encoding: " << rhs.encoding();
-  os << ", data: " << rhs.data();
+  os << ", rgb_data: " << rhs.rgb_data();
+  os << ", depth_data: " << rhs.depth_data();
   os << "]";
   return os;
 }
@@ -47,11 +48,12 @@ const propvec &get_type_props<::sim_msgs::ImageData>() {
   props.clear();
 
   props.push_back(entity_properties_t(0, 0, false, bit_bound::bb_unset, extensibility::ext_final));  //root
-  props.push_back(entity_properties_t(1, 0, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::width
-  props.push_back(entity_properties_t(1, 1, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::height
+  props.push_back(entity_properties_t(1, 0, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::res_x
+  props.push_back(entity_properties_t(1, 1, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::res_y
   props.push_back(entity_properties_t(1, 2, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::stride
   props.push_back(entity_properties_t(1, 3, false, bit_bound::bb_unset, extensibility::ext_final, false));  //::encoding
-  props.push_back(entity_properties_t(1, 4, false, bit_bound::bb_unset, extensibility::ext_final, false));  //::data
+  props.push_back(entity_properties_t(1, 4, false, bit_bound::bb_unset, extensibility::ext_final, false));  //::rgb_data
+  props.push_back(entity_properties_t(1, 5, false, bit_bound::bb_unset, extensibility::ext_final, false));  //::depth_data
 
   entity_properties_t::finish(props, keylist);
   initialized.store(true, std::memory_order_release);
@@ -63,4 +65,3 @@ const propvec &get_type_props<::sim_msgs::ImageData>() {
 } //namespace cyclonedds
 } //namespace eclipse
 } //namespace org
-

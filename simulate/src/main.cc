@@ -33,6 +33,7 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
+#include "dds/camera_publisher.h"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
@@ -678,19 +679,50 @@ int main(int argc, char **argv)
     param::config.robot_scene = proj_dir.parent_path() / "unitree_robots" / param::config.robot / param::config.robot_scene;
   }
 
+  // Load camera configuration
+  CameraConfig cam_cfg;
+  auto yaml_dir = proj_dir / "src" / "config" / "sensors" / "camera.yaml";
+  if (std::filesystem::exists(yaml_dir)) {
+    cam_cfg.load(yaml_dir);
+  } else {
+    std::printf("camera configuration file not found, using defaults\n");
+  }
+
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
 
-  std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
+  // Create offscreen window for camera publishing.
+  GLFWwindow* main_window = static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_;
+  
+  std::unique_ptr<CameraPublisher> camera_pub;
 
-  // start physics thread
+  // Start threads
+  std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
   std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
-  // start simulation UI loop (blocking call)
-  glfwSetKeyCallback(static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_,user_key_cb);
+ 
+  // Wire callbacks
+  glfwSetKeyCallback(main_window,user_key_cb);
+
+  // Start camera publisher after physics sim
+  std::thread cam_wait([&]()
+  {
+    while (!m || !d) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    camera_pub = std::make_unique<CameraPublisher>(
+      m, d, main_window, cam_cfg, "rt/camera/depth"
+    );
+
+    camera_pub->start();
+  });
+
+  cam_wait.detach();
+
+ // Start simulation UI loop (blocking call)
   sim->RenderLoop();
   physicsthreadhandle.join();
+
+  if (camera_pub) camera_pub->stop();
 
   pthread_exit(NULL);
   return 0;

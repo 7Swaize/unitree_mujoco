@@ -62,9 +62,9 @@ public:
     CameraPublisher& operator =(const CameraPublisher&) = delete;
 
     void start() {
-        if (!offscreen_window_ || !publisher_) {
-            return;
-        }
+        if (!offscreen_window_ || !publisher_) return;
+
+        init_msg();
 
         running_ = true;
         thread_ = std::thread(GLFWRenderHandler{this});
@@ -86,10 +86,26 @@ private:
     
     std::atomic<bool> running_;
     std::thread thread_;
+
+    sim_msgs::ImageData msg_;
     std::unique_ptr<unitree::robot::ChannelPublisher<sim_msgs::ImageData>> publisher_;
 
+    void init_msg() {
+        msg_.res_x(static_cast<uint32_t>(cfg_.res_x));
+        msg_.res_y(static_cast<uint32_t>(cfg_.res_y));
+        msg_.stride_rgb(static_cast<uint32_t>(cfg_.res_x * 3));
+        msg_.stride_depth(static_cast<uint32_t>(cfg_.res_x * sizeof(float)));
+        msg_.encoding("32FC1");
+    }
+
     void publish(const std::vector<unsigned char>& rgb_buf, const std::vector<float>& depth_buf) {
-        // TODO
+        if (!publisher_) return;
+
+        // TODO: zero copy via cyclonedds iceoryx
+        msg_.rgb_data(std::vector<uint8_t>(rgb_buf.begin(), rgb_buf.end()));
+        msg_.depth_data(depth_buf);
+
+        publisher_->Write(msg_);
     }
 
     class GLFWRenderHandler {
@@ -124,11 +140,10 @@ private:
             mjv_defaultOption(&opt);
             mjr_defaultContext(&con_);
             mjr_makeContext(outer_->model_, &con_, mjFONTSCALE_50);
+            mjr_setBuffer(mjFB_OFFSCREEN, &con_); 
 
             int cam_id = mj_name2id(outer_->model_, mjOBJ_CAMERA, "Internal Camera");
-            if (cam_id < 0) {
-                throw std::runtime_error("[SIMULATOR] Internal camera not found in model");
-            }
+            if (cam_id < 0) throw std::runtime_error("[SIMULATOR] 'Internal Camera' not found in model");
 
             cam.type = mjCAMERA_FIXED;
             cam.fixedcamid = cam_id;
@@ -159,11 +174,27 @@ private:
                 mjv_updateScene(outer_->model_, outer_->data_, &opt, nullptr, &cam, mjCAT_ALL, &scn_);
                 mjr_render(viewport, &scn_, &con_);
                 mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con_);
+
+                depth_transform_hyperbolic_to_linear(depth_buf);
+                outer_->publish(rgb_buf, depth_buf);
             }
         }
 
-        void filter() {
-            // TODO
+        void depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf) const {
+            // see: https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
+            // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
+            
+            const float z_far = outer_->cfg_.far_clip;
+            const float z_fn_prod = outer_->cfg_.far_clip * outer_->cfg_.near_clip;
+            const float z_fn_sub = outer_->cfg_.far_clip - outer_->cfg_.near_clip;
+            const int N = depth_buf.size();
+
+            for (int i = 0; i < N; ++i) {
+                depth_buf[i] = z_fn_prod / (z_far - depth_buf[i] * (z_fn_sub));
+            }
+
+            // look at this for NEON: https://developer.arm.com/documentation/101028/0006/Advanced-SIMD--NEON--intrinsics
+            // future: conditionally compile with NEON or AVX2
         }
     };
 };

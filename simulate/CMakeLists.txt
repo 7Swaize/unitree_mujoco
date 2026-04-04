@@ -18,6 +18,8 @@ include_directories(
   mujoco/include
   mujoco/simulate
   src/lodepng
+  src/idl
+  src
 )
 link_directories(mujoco/lib)
 
@@ -29,6 +31,8 @@ file(GLOB SIM_SRC
   mujoco/simulate/platform_*.cc
   mujoco/simulate/simulate.cc
   src/lodepng/lodepng.cpp
+
+  src/idl/ImageData.cpp
 )
 
 link_libraries(

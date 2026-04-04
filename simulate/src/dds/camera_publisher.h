@@ -14,9 +14,16 @@
  
 #include <yaml-cpp/yaml.h>
 
+#include <unitree/common/thread/recurrent_thread.hpp>
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include "idl/ImageData.hpp"
 
+
+struct DDSPublisherConfig {
+    int domain_id;
+    std::string interface;
+    std::string topic;
+};
 
 struct CameraConfig {
     int res_x = 620;
@@ -43,10 +50,10 @@ public:
     CameraPublisher(mjModel* model,
                     mjData* data, 
                     GLFWwindow* share_window,
-                    const CameraConfig& cfg,
-                    const std::string& topic) // use "rt/sim/camera"
-        : model_(model), data_(data), offscreen_window_(nullptr), cfg_(cfg), running_(false)
-    {
+                    const CameraConfig& cam_cfg,
+                    const DDSPublisherConfig& dds_cfg)
+        : model_(model), data_(data), offscreen_window_(nullptr), cfg_(cam_cfg), running_(false)
+    {       
         // https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
@@ -54,7 +61,8 @@ public:
         offscreen_window_ = glfwCreateWindow(cfg_.res_x, cfg_.res_y, "go2_camera_offscreen", nullptr, share_window);
         glfwDefaultWindowHints();
 
-        publisher_ = std::make_unique<unitree::robot::ChannelPublisher<sim_msgs::ImageData>>(topic);
+        unitree::robot::ChannelFactory::Instance()->Init(dds_cfg.domain_id, dds_cfg.interface);
+        publisher_ = std::make_unique<unitree::robot::ChannelPublisher<sim_msgs::ImageData>>(dds_cfg.topic);
         publisher_->InitChannel();
     }
 

@@ -710,7 +710,8 @@ int main(int argc, char **argv)
   {
     while (!m || !d) std::this_thread::sleep_for(std::chrono::milliseconds(100));
     camera_pub = std::make_unique<CameraPublisher>(
-      m, d, main_window, cam_cfg, "rt/camera/depth"
+      m, d, main_window, cam_cfg,
+      DDSPublisherConfig{param::config.domain_id, param::config.interface, "rt/sim/camera"}
     );
 
     camera_pub->start();

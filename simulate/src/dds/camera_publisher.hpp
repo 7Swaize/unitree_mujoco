@@ -11,8 +11,9 @@
 #include <thread>
 #include <vector>
 #include <stdexcept>
- 
 #include <yaml-cpp/yaml.h>
+
+#include "utils/simd.hpp"
 
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include "idl/ImageData.hpp"

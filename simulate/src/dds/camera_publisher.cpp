@@ -144,15 +144,5 @@ void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(st
     // see: https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
     // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
     
-    const float z_far = outer_->cfg_.far_clip;
-    const float z_fn_prod = outer_->cfg_.far_clip * outer_->cfg_.near_clip;
-    const float z_fn_sub = outer_->cfg_.far_clip - outer_->cfg_.near_clip;
-    const int N = depth_buf.size();
- 
-    for (int i = 0; i < N; ++i) {
-        depth_buf[i] = z_fn_prod / (z_far - depth_buf[i] * (z_fn_sub));
-    }
- 
-    // look at this for NEON: https://developer.arm.com/documentation/101028/0006/Advanced-SIMD--NEON--intrinsics
-    // future: conditionally compile with NEON or AVX2
+    simd::transform_inplace(depth_buf.data(), depth_buf.size(), simd::operations::LinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip});
 }

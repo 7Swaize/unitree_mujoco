@@ -18,7 +18,7 @@
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include "idl/ImageData.hpp"
  
- 
+
 struct DDSPublisherConfig {
     int domain_id;
     std::string interface;

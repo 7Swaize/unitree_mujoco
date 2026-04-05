@@ -71,7 +71,6 @@ void CameraPublisher::publish(const std::vector<unsigned char>& rgb_buf, const s
 }
 
 
-
 // CameraPublisher::GLFWRenderHandler
 
 CameraPublisher::GLFWRenderHandler::GLFWRenderHandler(CameraPublisher* outer)
@@ -114,7 +113,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     mjrRect viewport = {0, 0, outer_->cfg_.res_x, outer_->cfg_.res_y};
     
     std::vector<unsigned char> rgb_buf(3 * outer_->cfg_.res_x * outer_->cfg_.res_y);
-    std::vector<float, simd::aligned_allocator<float, 32>> depth_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
+    std::vector<float, simd::aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
     std::vector<float> depth_transfer_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
 
     auto next_time = std::chrono::steady_clock::now();

@@ -12,7 +12,7 @@ stand_up_joint_pos = np.array([
     0.00571868, 0.608813, -1.21763, -0.00571868, 0.608813, -1.21763,
     0.00571868, 0.608813, -1.21763, -0.00571868, 0.608813, -1.21763
 ],
-                              dtype=float)
+                                dtype=float)
 
 stand_down_joint_pos = np.array([
     0.0473455, 1.22187, -2.44375, -0.0473455, 1.22187, -2.44375, 0.0473455,
@@ -28,7 +28,7 @@ input("Press enter to start")
 
 if __name__ == '__main__':
 
-    if len(sys.argv) <2:
+    if len(sys.argv) < 2:
         ChannelFactoryInitialize(1, "lo")
     else:
         ChannelFactoryInitialize(0, sys.argv[1])

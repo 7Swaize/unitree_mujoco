@@ -8,6 +8,7 @@
 #include <new>
 #include <stdexcept>
 
+#define SIMD_ALIGNMENT 32 // 32 bit alignment given by LCM
 
 #if defined(__AVX2__)
     #define SIMD_AVX2
@@ -28,6 +29,7 @@
     #define SIMD_SCALAR
 #endif
 
+
 #if defined(_MSC_VER)
     #define FORCE_INLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
@@ -39,7 +41,6 @@
 
 namespace simd { 
 
-// Assume 32 bit alignment given by LCM
 #if defined(SIMD_AVX) || defined(SIMD_AVX2)
     using vec_f32 = __m256;
     constexpr std::size_t vec_width = 8;

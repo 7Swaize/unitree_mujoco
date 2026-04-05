@@ -114,8 +114,9 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     mjrRect viewport = {0, 0, outer_->cfg_.res_x, outer_->cfg_.res_y};
     
     std::vector<unsigned char> rgb_buf(3 * outer_->cfg_.res_x * outer_->cfg_.res_y);
-    std::vector<float> depth_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
- 
+    std::vector<float, simd::aligned_allocator<float, 32>> depth_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
+    std::vector<float> depth_transfer_buf(outer_->cfg_.res_x * outer_->cfg_.res_y);
+
     auto next_time = std::chrono::steady_clock::now();
  
     while (outer_->running_) {
@@ -135,12 +136,13 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjr_render(viewport, &scn_, &con_);
         mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con_);
  
-        depth_transform_hyperbolic_to_linear(depth_buf);
-        outer_->publish(rgb_buf, depth_buf);
+        depth_transfer_buf.assign(depth_buf.begin(), depth_buf.end());
+        depth_transform_hyperbolic_to_linear(depth_transfer_buf);
+        outer_->publish(rgb_buf, depth_transfer_buf);
     }
 }
 
-void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf) const {
+void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf) {
     // see: https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
     // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
     

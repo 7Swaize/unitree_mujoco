@@ -82,6 +82,6 @@ private:
         mjrContext con_;
  
         void renderLoop();
-        void depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf) const;
+        void depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf);
     };
 };

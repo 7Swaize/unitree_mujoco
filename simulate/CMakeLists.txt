@@ -33,8 +33,8 @@ file(GLOB SIM_SRC
   src/lodepng/lodepng.cpp
 
   src/idl/ImageData.cpp
-  
   src/dds/camera_publisher.cpp
+  src/utils/simd.cpp
 )
 
 link_libraries(

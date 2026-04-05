@@ -5,26 +5,12 @@ namespace operations {
 
 // LinDistMap
 
-LinDistMap::LinDistMap(const float zn, const float zf)
-#if defined(SIMD_AVX) || defined(SIMD_AVX2) 
-    : z_far(_mm256_set1_ps(zf)),
-      z_fn_prod(_mm256_set1_ps(zf * zn)),
-      z_fn_sub(_mm256_set1_ps(zf - zn)),
-      z_far_f(zf),
-      z_fn_prod_f(zf * zn),
-      z_fn_sub_f(zf - zn)
-#elif defined(SIMD_SSE2)
-    : z_far(_mm_set1_ps(zf)),
-      z_fn_prod(_mm_set1_ps(zf * zn)),
-      z_fn_sub(_mm_set1_ps(zf - zn)),
-      z_far_f(zf),
-      z_fn_prod_f(zf * zn),
-      z_fn_sub_f(zf - zn)
-#elif defined(SIMD_NEON)
-    : z_far(vdupq_n_f32(zf)),
-      z_fn_prod(vdupq_n_f32(zf * zn)),
-      z_fn_sub(vdupq_n_f32(zf - zn)),
-      z_far_f(zf),
+LinDistMap::LinDistMap(float zn, float zf)
+#if !defined(SIMD_SCALAR)
+    : z_far_v(broadcast(zf)),
+      z_fn_prod_v(broadcast(zf * zn)),
+      z_fn_sub_v(broadcast(zf - zn)),
+      z_far_f(zf), 
       z_fn_prod_f(zf * zn),
       z_fn_sub_f(zf - zn)
 #else
@@ -32,25 +18,40 @@ LinDistMap::LinDistMap(const float zn, const float zf)
       z_fn_prod_f(zf * zn),
       z_fn_sub_f(zf - zn)
 #endif
-{ }
+{}
 
 
-#if defined(SIMD_AVX) || defined(SIMD_AVX2) 
-    simd::simd_vec_f LinDistMap::simd_v256(simd::simd_vec_f d) const {
-        
-    }
+#if defined(SIMD_AVX) || defined(SIMD_AVX2)
+ 
+vec_f32 LinDistMap::apply(__m256 d) const noexcept {
+    __m256 denom;
+#if defined(__FMA__)
+    denom = _mm256_fnmadd_ps(d, z_fn_sub_v, z_far_v);
+#else
+    denom = _mm256_sub_ps(z_far_v, _mm256_mul_ps(d, z_fn_sub_v));
 #endif
+    return _mm256_div_ps(z_fn_prod_v, denom);
+}
+ 
+#elif defined(SIMD_SSE2)
 
-#if defined(SIMD_SSE2)
-    simd::simd_vec_f LinDistMap::simd_v128(simd::simd_vec_f d) const {
-
-    }
+vec_f32 LinDistMap::apply(__m128 d) const noexcept {
+    __m128 denom;
+#if defined(__FMA__)
+    denom = _mm_fnmadd_ps(d, z_fn_sub_v, z_far_v);
+#else
+    denom = _mm_sub_ps(z_far_v, _mm_mul_ps(d, z_fn_sub_v));
 #endif
+    return _mm_div_ps(z_fn_prod_v, denom);
+}
 
-#if defined(SIMD_NEON)
-    simd::simd_vec_f LinDistMap::simd_neon(simd::simd_vec_f d) const {
-        
-    }
+#elif defined(SIMD_NEON)
+
+vec_f32 LinDistMap::apply(float32x4_t d) const noexcept {
+    float32x4_t denom = vsubq_f32(z_far_v, vmulq_f32(d, z_fn_sub_v));
+    return vdivq_f32(z_fn_prod_v, denom);
+}
+ 
 #endif
 
 } // operations

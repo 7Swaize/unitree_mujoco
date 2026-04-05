@@ -8,44 +8,65 @@
 #include <new>
 #include <stdexcept>
 
-namespace simd {
-#if defined(_M_X64) || defined(__x86_64__) || defined(__i386__)
-    #if defined(__AVX2__)
-        #define SIMD_AVX2
+
+#if defined(__AVX2__)
+    #define SIMD_AVX2
+    #include <immintrin.h>
+#elif defined(__AVX__)
+    #define SIMD_AVX
+    #include <immintrin.h>
+#elif defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+    #define SIMD_SSE2
+    #include <emmintrin.h>
+    #if defined(__FMA__) // FMA3 is under independant header
         #include <immintrin.h>
-    #elif defined(__AVX__)
-        #define SIMD_AVX
-        #include <immintrin.h>
-    #elif defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
-        #define SIMD_SSE2
-        #include <emmintrin.h>
-    #else
-        #define SIMD_SCALAR
     #endif
-#elif defined(__arm__) || defined(__aarch64__)
-    #if defined(__ARM_NEON)
-        #define SIMD_NEON
-        #include <arm_neon.h>
-    #else
-        #define SIMD_SCALAR
-    #endif
+#elif defined(__ARM_NEON)
+    #define SIMD_NEON
+    #include <arm_neon.h>
+#else
+    #define SIMD_SCALAR
 #endif
 
-#if defined(SIMD_AVX) || defined(SIMD_AVX2)
-using simd_vec_f = __m256;
-inline simd_vec_f make_vec(float v) { return _mm256_set1_ps(v); }
-
-#elif defined(SIMD_SSE2)
-using simd_vec_f = __m128;
-inline simd_vec_f make_vec(float v) { return _mm_set1_ps(v); }
-
-#elif defined(SIMD_NEON)
-using simd_vec_f = float32x4_t;
-inline simd_vec_f make_vec(float v) { return vdupq_n_f32(v); }
-
+#if defined(_MSC_VER)
+    #define FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+    #define FORCE_INLINE __attribute__((always_inline)) inline
 #else
-using simd_vec_f = float;
-inline simd_vec_f make_vec(float v) { return v; }
+    #define FORCE_INLINE inline
+#endif
+
+
+namespace simd { 
+
+// Assume 32 bit alignment given by LCM
+#if defined(SIMD_AVX) || defined(SIMD_AVX2)
+    using vec_f32 = __m256;
+    constexpr std::size_t vec_width = 8;
+    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return _mm256_set1_ps(v); }
+    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return _mm256_load_ps(p); }
+    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { _mm256_store_ps(p, v); }
+ 
+#elif defined(SIMD_SSE2)
+    using vec_f32 = __m128;
+    constexpr std::size_t vec_width = 4;
+    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return _mm_set1_ps(v); }
+    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return _mm_load_ps(p); }
+    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { _mm_store_ps(p, v); }
+ 
+#elif defined(SIMD_NEON)
+    using vec_f32 = float32x4_t;
+    constexpr std::size_t vec_width = 4;
+    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return vdupq_n_f32(v); }
+    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return vld1q_f32(p); }
+    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { vst1q_f32(p, v); }
+ 
+#else   // mock vectors -> 32 bits
+    using vec_f32 = float;
+    constexpr std::size_t vec_width = 1;
+    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return v; }
+    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return *p; }
+    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { *p = v; }
 #endif
 
 } // simd
@@ -62,14 +83,18 @@ struct aligned_allocator {
     template <class U>
     constexpr aligned_allocator(const aligned_allocator<U, Alignment>&) noexcept {}
 
-    T* allocate(std::size_t n) {
-        void* ptr = nullptr; 
+    // https://stackoverflow.com/questions/66891368/template-parametric-type-allocator-in-c
+    template <class U>
+    struct rebind { using other = aligned_allocator<U, Alignment>; };
 
-#if defined(__MSC_VER)
+    T* allocate(std::size_t n) {
+        void* ptr = nullptr;
+#if defined(_MSC_VER)
         ptr = _aligned_malloc(n * sizeof(T), Alignment);
         if (!ptr) throw std::bad_alloc();
 #else
-        if (posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0) throw std::bad_alloc();
+        if (posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0)
+            throw std::bad_alloc();
 #endif
 
         return reinterpret_cast<T*>(ptr);
@@ -84,34 +109,17 @@ struct aligned_allocator {
     }
 };
 
-template <typename T, typename Operation>
-void transform_inplace(T* data, std::size_t n, Operation operation) {
+template <typename Operation>
+inline void transform_inplace(float* data, const std::size_t n, const Operation& op) {
     std::size_t i = 0;
-
-#if defined(SIMD_AVX) || defined(SIMD_AVX2)
-    for (; i + 8 <= n; i += 8) {
-        simd::simd_vec_f v = _mm256_load_ps(data + i);
-        simd::simd_vec_f r = operation.simd(v);
-        _mm256_store_ps(data + i, r);
-    }
-
-#elif defined(SIMD_SSE2)
-    for (; i + 4 <= n; i += 4) {
-        simd::simd_vec_f v = _mm_load_ps(data + i);
-        simd::simd_vec_f r = operation.simd(v);
-        _mm_store_ps(data + i, r);
-    }
-
-#elif defined(SIMD_NEON)
-    for (; i + 4 <= n; i += 4) {
-        simd::simd_vec_f v = vld1q_f32(data + i);
-        simd::simd_vec_f r = operation.simd(v);
-        vst1q_f32(data + i, r);
+    
+#if !defined(SIMD_SCALAR)
+    for (; i + vec_width <= n; i += vec_width) {
+        vec_store(data + i, op.apply(vec_load(data + i)));
     }
 #endif
-
-    for (; i < n; i++) {
-        data[i] = operation.simd(data[i]);
+    for (; i < n; ++i) {
+        data[i] = op.scalar(data[i]);
     }
 }
 
@@ -119,32 +127,24 @@ void transform_inplace(T* data, std::size_t n, Operation operation) {
 namespace operations {
 
 struct LinDistMap {
-    const simd::simd_vec_f z_far;
-    const simd::simd_vec_f z_fn_prod;
-    const simd::simd_vec_f z_fn_sub;
-
-    // Maintain float for residues after SIMD
+#if !defined(SIMD_SCALAR)
+    const vec_f32 z_far_v;
+    const vec_f32 z_fn_prod_v;
+    const vec_f32 z_fn_sub_v;
+#endif
     const float z_far_f;
     const float z_fn_prod_f;
     const float z_fn_sub_f;
 
+    
     LinDistMap(const float zn, const float zf);
 
-    // Maintain float for residues after SIMD
-    inline float scalar(float d) const {
+    inline float scalar(float d) const noexcept {
         return z_fn_prod_f / (z_far_f - d * z_fn_sub_f);
     }
 
-#if defined(SIMD_AVX) || defined(SIMD_AVX2) 
-    simd::simd_vec_f simd_v256(simd::simd_vec_f d) const;
-#endif
-
-#if defined(SIMD_SSE2)
-    simd::simd_vec_f simd_v128(simd::simd_vec_f d) const;
-#endif
-
-#if defined(SIMD_NEON)
-    simd::simd_vec_f simd_neon(simd::simd_vec_f d) const;
+#if !defined(SIMD_SCALAR)
+    vec_f32 apply(vec_f32 d) const noexcept;
 #endif
 };
 

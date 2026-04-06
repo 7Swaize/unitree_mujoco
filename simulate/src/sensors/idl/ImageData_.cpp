@@ -39,11 +39,10 @@ propvec &get_type_props<::sim_msgs::ImageData_>() {
   props.push_back(entity_properties_t(0, 0, false, bb_unset, extensibility::ext_final));  //root
   props.push_back(entity_properties_t(1, 0, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::res_x
   props.push_back(entity_properties_t(1, 1, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::res_y
-  props.push_back(entity_properties_t(1, 2, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::stride_rgb
-  props.push_back(entity_properties_t(1, 3, false, get_bit_bound<uint32_t>(), extensibility::ext_final, false));  //::stride_depth
-  props.push_back(entity_properties_t(1, 4, false, bb_unset, extensibility::ext_final, false));  //::encoding
-  props.push_back(entity_properties_t(1, 5, false, bb_unset, extensibility::ext_final, false));  //::rgb_data
-  props.push_back(entity_properties_t(1, 6, false, bb_unset, extensibility::ext_final, false));  //::depth_data
+  props.push_back(entity_properties_t(1, 2, false, get_bit_bound<float>(), extensibility::ext_final, false));  //::depth_min
+  props.push_back(entity_properties_t(1, 3, false, get_bit_bound<float>(), extensibility::ext_final, false));  //::depth_max
+  props.push_back(entity_properties_t(1, 4, false, bb_unset, extensibility::ext_final, false));  //::rgb_data
+  props.push_back(entity_properties_t(1, 5, false, bb_unset, extensibility::ext_final, false));  //::depth_data
 
   entity_properties_t::finish(props, keylist);
   props_end = props.data() + props.size();

@@ -15,7 +15,7 @@ import cyclonedds.idl.annotations as annotate
 import cyclonedds.idl.types as types
 
 # root module import for resolving types
-# import sim_msgs
+# mport sim_msgs
 
 
 @dataclass
@@ -24,8 +24,9 @@ import cyclonedds.idl.types as types
 class ImageData_(idl.IdlStruct, typename="sim_msgs.ImageData_"):
     res_x: types.uint32
     res_y: types.uint32
-    stride_rgb: types.uint32
-    stride_depth: types.uint32
-    encoding: str
+    depth_min: types.float32
+    depth_max: types.float32
     rgb_data: types.sequence[types.uint8]
     depth_data: types.sequence[types.float32]
+
+

@@ -55,9 +55,8 @@ void CameraPublisher::stop() {
 void CameraPublisher::init_msg() {
     msg_.res_x(static_cast<uint32_t>(cfg_.res_x));
     msg_.res_y(static_cast<uint32_t>(cfg_.res_y));
-    msg_.stride_rgb(static_cast<uint32_t>(cfg_.res_x * 3));
-    msg_.stride_depth(static_cast<uint32_t>(cfg_.res_x * sizeof(float)));
-    msg_.encoding("32FC1");
+    msg_.depth_min(static_cast<float>(cfg_.near_clip));
+    msg_.depth_max(static_cast<float>(cfg_.far_clip));
 }
 
 void CameraPublisher::publish(const std::vector<unsigned char>& rgb_buf, const std::vector<float>& depth_buf) {

@@ -33,7 +33,7 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
-#include "dds/camera_publisher.hpp"
+#include "sensors/common/camera_publisher.hpp"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"

@@ -16,7 +16,7 @@
 #include "utils/simd.hpp"
 
 #include <unitree/robot/channel/channel_publisher.hpp>
-#include "idl/ImageData_.hpp"
+#include "sensors/idl/ImageData_.hpp"
  
 #define DDS_TOPIC_SIM_CAMERA "rt/sim/camera"
 

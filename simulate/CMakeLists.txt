@@ -18,7 +18,7 @@ include_directories(
   mujoco/include
   mujoco/simulate
   src/lodepng
-  src/idl
+  src/sensors
   src
 )
 link_directories(mujoco/lib)
@@ -32,8 +32,8 @@ file(GLOB SIM_SRC
   mujoco/simulate/simulate.cc
   src/lodepng/lodepng.cpp
 
-  src/idl/ImageData.cpp
-  src/dds/camera_publisher.cpp
+  src/sensors/idl/ImageData_.cpp
+  src/sensors/common/camera_publisher.cpp
   src/utils/simd.cpp
 )
 

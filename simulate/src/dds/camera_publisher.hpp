@@ -16,13 +16,13 @@
 #include "utils/simd.hpp"
 
 #include <unitree/robot/channel/channel_publisher.hpp>
-#include "idl/ImageData.hpp"
+#include "idl/ImageData_.hpp"
  
+#define DDS_TOPIC_SIM_CAMERA "rt/sim/camera"
 
 struct DDSPublisherConfig {
-    int domain_id;
-    std::string interface;
-    std::string topic;
+    const int domain_id;
+    const std::string interface;
 };
 
 
@@ -61,8 +61,8 @@ private:
     std::atomic<bool> running_;
     std::thread thread_;
  
-    sim_msgs::ImageData msg_;
-    std::unique_ptr<unitree::robot::ChannelPublisher<sim_msgs::ImageData>> publisher_;
+    sim_msgs::ImageData_ msg_;
+    std::unique_ptr<unitree::robot::ChannelPublisher<sim_msgs::ImageData_>> publisher_;
  
     void init_msg();
     void publish(const std::vector<unsigned char>& rgb_buf, const std::vector<float>& depth_buf);

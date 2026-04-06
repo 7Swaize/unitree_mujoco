@@ -31,7 +31,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
     glfwDefaultWindowHints();
  
     unitree::robot::ChannelFactory::Instance()->Init(dds_cfg.domain_id, dds_cfg.interface);
-    publisher_ = std::make_unique<unitree::robot::ChannelPublisher<sim_msgs::ImageData>>(dds_cfg.topic);
+    publisher_ = std::make_unique<unitree::robot::ChannelPublisher<sim_msgs::ImageData_>>(DDS_TOPIC_SIM_CAMERA);
     publisher_->InitChannel();
 }
 
@@ -101,7 +101,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     mjr_setBuffer(mjFB_OFFSCREEN, &con_); 
  
     int cam_id = mj_name2id(outer_->model_, mjOBJ_CAMERA, "Internal Camera");
-    if (cam_id < 0) throw std::runtime_error("[SIMULATOR] 'Internal Camera' not found in model");
+    if (cam_id < 0) throw std::runtime_error("[Simulator] 'Internal Camera' not found in model");
  
     cam.type = mjCAMERA_FIXED;
     cam.fixedcamid = cam_id;

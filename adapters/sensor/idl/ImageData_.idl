@@ -1,0 +1,14 @@
+module sim_msgs {
+    struct ImageData_ {
+        uint32 res_x;
+        uint32 res_y;
+
+        uint32 stride_rgb;
+        uint32 stride_depth;
+
+        string encoding;
+
+        sequence<uint8> rgb_data;
+        sequence<float> depth_data;
+    };
+};

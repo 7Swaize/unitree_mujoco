@@ -1,8 +1,3 @@
-# 'res_x' and 'res_y' defines the physical resolution of the image buffer.
-# So, it determines how many pixels to draw per frame capture.
-res_x: 620
-res_y: 480
-
 # These are the default clipping planes set by the simulation.
 # NOTE: This affects the clipping planes on ALL cameras.
 far_clip: 50

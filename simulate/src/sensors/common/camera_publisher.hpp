@@ -5,6 +5,7 @@
 #include "simulate.h"
  
 #include <atomic>
+#include <cassert>
 #include <cstring>
 #include <filesystem>
 #include <memory>
@@ -14,6 +15,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "utils/simd.hpp"
+#include "utils/aligned_allocator.hpp"
 
 #include "iox2/iceoryx2.hpp"
 #include "iceoryx/DepthFrame_.hpp"

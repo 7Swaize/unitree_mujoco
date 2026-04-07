@@ -7,8 +7,6 @@ using namespace iox2;
 void CameraConfig::load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
     
-    res_x = cfg["res_x"].as<int>(res_x);
-    res_y = cfg["res_y"].as<int>(res_y);
     far_clip = cfg["far_clip"].as<float>(far_clip);
     near_clip = cfg["near_clip"].as<float>(near_clip);
     publish_fps = cfg["publish_fps"].as<double>(publish_fps);
@@ -40,7 +38,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
  
-    offscreen_window_ = glfwCreateWindow(cfg_.res_x, cfg_.res_y, "go2_camera_offscreen", nullptr, share_window);
+    offscreen_window_ = glfwCreateWindow(FRAME_WIDTH, FRAME_HEIGHT, "go2_camera_offscreen", nullptr, share_window);
     glfwDefaultWindowHints();
 
     set_log_level_from_env_or(LogLevel::Debug);
@@ -147,10 +145,14 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     outer_->model_->vis.map.znear = outer_->cfg_.near_clip;
     outer_->model_->vis.map.zfar = outer_->cfg_.far_clip;
  
-    mjrRect viewport = {0, 0, outer_->cfg_.res_x, outer_->cfg_.res_y};
+    mjrRect viewport = {0, 0, FRAME_WIDTH, FRAME_HEIGHT};
     
     std::vector<unsigned char> rgb_buf(FRAME_BUFFER_ELEMENTS_RGB);
-    std::vector<float, simd::aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(FRAME_BUFFER_ELEMENTS_DEPTH);
+    std::vector<float, aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(FRAME_BUFFER_ELEMENTS_DEPTH);
+
+    {
+        assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));
+    }
 
     auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);
     auto next_time = std::chrono::steady_clock::now();

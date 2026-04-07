@@ -18,9 +18,9 @@
 #include "utils/aligned_allocator.hpp"
 
 #include "iox2/iceoryx2.hpp"
-#include "iceoryx/DepthFrame_.hpp"
-#include "iceoryx/RGBFrame_.hpp"
- 
+#include "iceoryx/msg/DepthFrame_.hpp"
+#include "iceoryx/msg/RGBFrame_.hpp"
+
 #define DDS_TOPIC_SIM_CAMERA_DEPTH "rt/sim/depth"
 #define DDS_TOPIC_SIM_CAMERA_RGB "rt/sim/rgb"
 

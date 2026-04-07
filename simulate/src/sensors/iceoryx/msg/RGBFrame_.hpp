@@ -5,7 +5,7 @@
 #include "iox2/bb/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 
-#include "constants.hpp"
+#include "iceoryx/constants.hpp"
 
 
 namespace ipc_msg {

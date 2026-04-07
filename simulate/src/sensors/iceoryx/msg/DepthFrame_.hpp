@@ -5,7 +5,7 @@
 #include "iox2/bb/static_vector.hpp"
 #include "iox2/iceoryx2.hpp"
 
-#include "constants.hpp"
+#include "iceoryx/constants.hpp"
 
 // see: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/examples/cxx/complex_data_types/src/complex_data_types.cpp
 

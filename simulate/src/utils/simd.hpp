@@ -113,7 +113,7 @@ struct aligned_allocator {
 template <typename Operation>
 inline void transform_inplace(float* data, const std::size_t n, const Operation& op) {
     std::size_t i = 0;
-    
+
 #if !defined(SIMD_SCALAR)
     for (; i + vec_width <= n; i += vec_width) {
         vec_store(data + i, op.apply(vec_load(data + i)));

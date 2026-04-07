@@ -31,12 +31,9 @@ class InternalCamera:
 
 
         # ---- TEMP VIS (delete block later) ----
-        try:
-            vis = np.hstack((rgb_frame, depth_frame))  # side-by-side
-            cv2.imshow("DEBUG_CAMERA", vis)
-            cv2.waitKey(1)
-        except Exception:
-            pass
+        vis = np.hstack((rgb_frame, depth_frame))  # side-by-side
+        cv2.imshow("DEBUG_CAMERA", vis)
+        cv2.waitKey(1)
         # --------------------------------------
 
 

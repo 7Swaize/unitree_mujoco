@@ -15,10 +15,12 @@
 
 #include "utils/simd.hpp"
 
-#include <unitree/robot/channel/channel_publisher.hpp>
-#include "sensors/idl/ImageData_.hpp"
+#include "iox2/iceoryx2.hpp"
+#include "iceoryx/DepthFrame_.hpp"
+#include "iceoryx/RGBFrame_.hpp"
  
-#define DDS_TOPIC_SIM_CAMERA "rt/sim/camera"
+#define DDS_TOPIC_SIM_CAMERA_DEPTH "rt/sim/depth"
+#define DDS_TOPIC_SIM_CAMERA_RGB "rt/sim/rgb"
 
 struct DDSPublisherConfig {
     const int domain_id;
@@ -44,8 +46,11 @@ public:
                     mjData* data, 
                     GLFWwindow* share_window,
                     const CameraConfig& cam_cfg,
-                    const DDSPublisherConfig& dds_cfg);
+                    const DDSPublisherConfig& dds_cfg,
+                    mujoco::SimulateMutex& sim_mtx);
  
+    ~CameraPublisher();
+    
     CameraPublisher(const CameraPublisher&) = delete;
     CameraPublisher& operator =(const CameraPublisher&) = delete;
  
@@ -56,32 +61,30 @@ private:
     mjModel* model_;
     mjData* data_;
     CameraConfig cfg_;
-    GLFWwindow* offscreen_window_;
+    GLFWwindow* offscreen_window_ = nullptr;
+    mujoco::SimulateMutex& sim_mtx_;
     
-    std::atomic<bool> running_;
+    std::atomic<bool> running_{false};
     std::thread thread_;
  
-    sim_msgs::ImageData_ msg_;
-    std::unique_ptr<unitree::robot::ChannelPublisher<sim_msgs::ImageData_>> publisher_;
+    iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msg::DepthFrame_, void> depth_service_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msg::RGBFrame_, void> rgb_service_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msg::DepthFrame_, void> depth_pub_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msg::RGBFrame_, void> rgb_pub_;
  
-    void init_msg();
-    void publish(const std::vector<unsigned char>& rgb_buf, const std::vector<float>& depth_buf);
+    void publish_depth(float* data, const size_t size);
+    void publish_rgb(unsigned char* data, const size_t size);
  
     class GLFWRenderHandler {
     public:
-        GLFWRenderHandler(CameraPublisher* outer);
- 
+        explicit GLFWRenderHandler(CameraPublisher* outer);
         void operator()();
- 
-        ~GLFWRenderHandler();
  
     private:
         CameraPublisher* outer_;
  
-        mjvScene scn_;
-        mjrContext con_;
- 
         void renderLoop();
-        void depth_transform_hyperbolic_to_linear(std::vector<float>& depth_buf);
+        void depth_transform_hyperbolic_to_linear(float* data, const size_t size);
     };
 };

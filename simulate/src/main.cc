@@ -711,7 +711,8 @@ int main(int argc, char **argv)
     while (!m || !d) std::this_thread::sleep_for(std::chrono::milliseconds(100));
     camera_pub = std::make_unique<CameraPublisher>(
       m, d, main_window, cam_cfg,
-      DDSPublisherConfig{param::config.domain_id, param::config.interface}
+      DDSPublisherConfig{param::config.domain_id, param::config.interface},
+      sim->mtx
     );
 
     camera_pub->start();

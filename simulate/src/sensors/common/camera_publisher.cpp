@@ -20,15 +20,28 @@ CameraPublisher::CameraPublisher(mjModel* model,
                                  GLFWwindow* share_window,
                                  const CameraConfig& cam_cfg,
                                  const DDSPublisherConfig& dds_cfg,
-                                 mujoco::SimulateMutex& sim_mtx)
-    : model_(model), data_(data), cfg_(cam_cfg), sim_mtx_(sim_mtx),
+                                 mujoco::SimulateMutex& sim_mutex)
+    : model_(model),
+      data_(data), 
+      cfg_(cam_cfg), 
+      sim_mutex_(sim_mutex),
       iox2_node_(NodeBuilder().create<ServiceType::Ipc>().value()),
       depth_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_DEPTH).value())
                          .publish_subscribe<ipc_msg::DepthFrame_>()
+                         .max_subscribers(1)
+                         .max_publishers(1)
+                         .subscriber_max_buffer_size(2) // we really only care about the most recent frame
+                         .subscriber_max_borrowed_samples(1)
+                         .history_size(1)
                          .open_or_create()
                          .value()),
       rgb_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_RGB).value())
                        .publish_subscribe<ipc_msg::RGBFrame_>()
+                       .max_subscribers(1)
+                       .max_publishers(1)
+                       .subscriber_max_buffer_size(2)
+                       .subscriber_max_borrowed_samples(1)
+                       .history_size(1)
                        .open_or_create()
                        .value()),
       depth_pub_(depth_service_.publisher_builder().create().value()),
@@ -70,11 +83,11 @@ void CameraPublisher::stop() {
 void CameraPublisher::publish_depth(float* data, const size_t size) {
     auto sample = depth_pub_.loan_uninit().value();
     new (&sample.payload_mut()) ipc_msg::DepthFrame_{};
-
+    
     auto& payload = sample.payload_mut();
     payload.depth_min = cfg_.near_clip;
     payload.depth_max = cfg_.far_clip;
-    std::memcpy(payload.data.unchecked_access().data(), data, size * sizeof(float));
+    std::memcpy(payload.data.data(), data, size * sizeof(float));
 
 #ifndef __INTELLISENSE__
     auto initialized = iox2::assume_init(std::move(sample));
@@ -87,7 +100,7 @@ void CameraPublisher::publish_rgb(unsigned char* data, const size_t size) {
     new (&sample.payload_mut()) ipc_msg::RGBFrame_{};
 
     auto& payload = sample.payload_mut();
-    std::memcpy(payload.data.unchecked_access().data(), reinterpret_cast<uint8_t*>(data), size * sizeof(uint8_t));
+    std::memcpy(payload.data.data(), reinterpret_cast<uint8_t*>(data), size * sizeof(uint8_t));
 
 #ifndef __INTELLISENSE__
     auto initialized = iox2::assume_init(std::move(sample));
@@ -168,7 +181,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
 
         // shared data with main sim -> lock
         {
-            mujoco::MutexLock lock(outer_->sim_mtx_);
+            mujoco::MutexLock lock(outer_->sim_mutex_);
             mjv_updateScene(outer_->model_, outer_->data_, &opt, nullptr, &cam, mjCAT_ALL, &scn);
         }
 

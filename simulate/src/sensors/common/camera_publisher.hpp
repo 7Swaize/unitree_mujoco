@@ -49,7 +49,7 @@ public:
                     GLFWwindow* share_window,
                     const CameraConfig& cam_cfg,
                     const DDSPublisherConfig& dds_cfg,
-                    mujoco::SimulateMutex& sim_mtx);
+                    mujoco::SimulateMutex& sim_mutex);
  
     ~CameraPublisher();
     
@@ -64,7 +64,7 @@ private:
     mjData* data_;
     CameraConfig cfg_;
     GLFWwindow* offscreen_window_ = nullptr;
-    mujoco::SimulateMutex& sim_mtx_;
+    mujoco::SimulateMutex& sim_mutex_;
     
     std::atomic<bool> running_{false};
     std::thread thread_;

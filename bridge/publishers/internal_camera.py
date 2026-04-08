@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelFactoryInitialize
 
 from bridge.constants import DDS_SIM_CAMERA_TOPIC
-from idl.msg._ImageData_ import ImageData_
+from iceoryx.msg._ImageData_ import ImageData_
 
 
 class InternalCamera:

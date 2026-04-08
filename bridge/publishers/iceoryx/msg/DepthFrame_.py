@@ -3,7 +3,7 @@ import ctypes
 from ..constants import *
 
 
-class DepthFrame_(ctypes.Structure):
+class DepthFrame(ctypes.Structure):
     _fields_ = [
         ("width", ctypes.c_uint32),
         ("height", ctypes.c_uint32),
@@ -14,4 +14,4 @@ class DepthFrame_(ctypes.Structure):
 
     @staticmethod
     def type_name() -> str:
-        return "DepthFrame_"
+        return "DepthFrame"

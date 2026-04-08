@@ -6,8 +6,8 @@
 // see: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/examples/cxx/complex_data_types/src/complex_data_types.cpp
 
 
-struct DepthFrame_ {
-    static constexpr const char* IOX2_TYPE_NAME = "DepthFrame_";
+struct DepthFrame {
+    static constexpr const char* IOX2_TYPE_NAME = "DepthFrame";
 
     uint32_t width = FRAME_WIDTH;
     uint32_t height = FRAME_HEIGHT;

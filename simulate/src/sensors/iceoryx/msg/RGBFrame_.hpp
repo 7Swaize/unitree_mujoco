@@ -4,8 +4,8 @@
 #include "iceoryx/constants.hpp"
 
 
-struct RGBFrame_ {
-    static constexpr const char* IOX2_TYPE_NAME = "RGBFrame_";
+struct RGBFrame {
+    static constexpr const char* IOX2_TYPE_NAME = "RGBFrame";
 
     uint32_t width = FRAME_WIDTH;
     uint32_t height = FRAME_HEIGHT;

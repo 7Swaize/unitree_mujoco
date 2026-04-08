@@ -7,8 +7,8 @@ import iceoryx2 as iox2
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from iceoryx.msg.DepthFrame_ import DepthFrame_
-from iceoryx.msg.RGBFrame_ import RGBFrame_
+from iceoryx.msg.DepthFrame_ import DepthFrame
+from iceoryx.msg.RGBFrame_ import RGBFrame
 from iceoryx.constants import DDS_TOPIC_SIM_CAMERA_RGB, DDS_TOPIC_SIM_CAMERA_DEPTH
 
 # TODO: Inherit from thread
@@ -19,11 +19,11 @@ class SimCameraSubscriber():
 
         self._node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
         self._depth_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_DEPTH)) \
-                                        .publish_subscribe(DepthFrame_) \
+                                        .publish_subscribe(DepthFrame) \
                                         .open_or_create()
 
         self._rgb_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_RGB)) \
-                                        .publish_subscribe(RGBFrame_) \
+                                        .publish_subscribe(RGBFrame) \
                                         .open_or_create()
 
         self._depth_sub = self._depth_service.subscriber_builder().create()

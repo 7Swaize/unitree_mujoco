@@ -27,11 +27,11 @@ CameraPublisher::CameraPublisher(mjModel* model,
       sim_mutex_(sim_mutex),
       iox2_node_(NodeBuilder().create<ServiceType::Ipc>().value()),
       depth_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_DEPTH).value())
-                         .publish_subscribe<DepthFrame_>()
+                         .publish_subscribe<DepthFrame>()
                          .open_or_create()
                          .value()),
       rgb_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_RGB).value())
-                       .publish_subscribe<RGBFrame_>()
+                       .publish_subscribe<RGBFrame>()
                        .open_or_create()
                        .value()),
       depth_pub_(depth_service_.publisher_builder().create().value()),
@@ -72,7 +72,7 @@ void CameraPublisher::stop() {
 
 void CameraPublisher::publish_depth(float* data, const size_t size) {
     auto sample = depth_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) DepthFrame_{};
+    new (&sample.payload_mut()) DepthFrame{};
     
     auto& payload = sample.payload_mut();
     payload.depth_min = cfg_.near_clip;
@@ -87,7 +87,7 @@ void CameraPublisher::publish_depth(float* data, const size_t size) {
 
 void CameraPublisher::publish_rgb(unsigned char* data, const size_t size) {
     auto sample = rgb_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) RGBFrame_{};
+    new (&sample.payload_mut()) RGBFrame{};
 
     auto& payload = sample.payload_mut();
     std::memcpy(payload.data, reinterpret_cast<uint8_t*>(data), size * sizeof(uint8_t));
@@ -157,22 +157,22 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));
 
         // Compile-time layout validation
-        static_assert(sizeof(DepthFrame_) == (16 + FRAME_BUFFER_ELEMENTS_DEPTH * 4), 
+        static_assert(sizeof(DepthFrame) == (16 + FRAME_BUFFER_ELEMENTS_DEPTH * 4), 
         "DepthFrame_ size mismatch: Check for unexpected padding!");
-        static_assert(offsetof(DepthFrame_, data) == 16, 
+        static_assert(offsetof(DepthFrame, data) == 16, 
         "DepthFrame_ alignment error: 'data' must start at byte 16!");
 
         // Compile-time layout validation
-        static_assert(sizeof(RGBFrame_) == (8 + FRAME_BUFFER_ELEMENTS_RGB), 
+        static_assert(sizeof(RGBFrame) == (8 + FRAME_BUFFER_ELEMENTS_RGB), 
             "RGBFrame_ size mismatch: Check for unexpected padding!");
-        static_assert(offsetof(RGBFrame_, data) == 8, 
+        static_assert(offsetof(RGBFrame, data) == 8, 
             "RGBFrame_ alignment error: 'data' must start at byte 8!");
 
         // Ensure the types are POD (Plain Old Data) for shared memory safety
-        static_assert(std::is_trivially_copyable<DepthFrame_>::value, "DepthFrame_ must be trivially copyable!");
-        static_assert(std::is_trivially_copyable<RGBFrame_>::value, "RGBFrame_ must be trivially copyable!");
+        static_assert(std::is_trivially_copyable<DepthFrame>::value, "DepthFrame_ must be trivially copyable!");
+        static_assert(std::is_trivially_copyable<RGBFrame>::value, "RGBFrame_ must be trivially copyable!");
 
-        static_assert(sizeof(DepthFrame_) == 1228816, "Size mismatch detected at compile time!");
+        static_assert(sizeof(DepthFrame) == 1228816, "Size mismatch detected at compile time!");
     }
 
     auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);

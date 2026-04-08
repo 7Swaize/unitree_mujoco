@@ -20,9 +20,8 @@
 #include "iox2/iceoryx2.hpp"
 #include "iceoryx/msg/DepthFrame_.hpp"
 #include "iceoryx/msg/RGBFrame_.hpp"
+#include "iceoryx/constants.hpp"
 
-#define DDS_TOPIC_SIM_CAMERA_DEPTH "rt/sim/depth"
-#define DDS_TOPIC_SIM_CAMERA_RGB "rt/sim/rgb"
 
 struct DDSPublisherConfig {
     const int domain_id;

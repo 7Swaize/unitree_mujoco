@@ -12,7 +12,7 @@ struct RGBFrame_ {
     uint32_t width = FRAME_WIDTH;
     uint32_t height = FRAME_HEIGHT;
     
-    std::array<float, FRAME_BUFFER_ELEMENTS_RGB> data;
+    std::array<uint8_t, FRAME_BUFFER_ELEMENTS_RGB> data;
 };
 
 } // ipc_msg

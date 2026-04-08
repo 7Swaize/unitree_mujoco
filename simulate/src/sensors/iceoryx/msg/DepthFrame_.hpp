@@ -16,7 +16,7 @@ struct DepthFrame_ {
     float depth_min;
     float depth_max;
 
-    std::array<uint8_t, FRAME_BUFFER_ELEMENTS_DEPTH> data;
+    std::array<float, FRAME_BUFFER_ELEMENTS_DEPTH> data;
 };
 
 } // ipc_msg

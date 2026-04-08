@@ -74,8 +74,8 @@ private:
     iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::DepthFrame_, void> depth_pub_;
     iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::RGBFrame_, void> rgb_pub_;
  
-    void publish_depth(float* data, const size_t size);
-    void publish_rgb(unsigned char* data, const size_t size);
+    void publish_depth(float* data);
+    void publish_rgb(unsigned char* data);
  
     class GLFWRenderHandler {
     public:

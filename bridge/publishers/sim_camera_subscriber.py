@@ -1,18 +1,20 @@
 import os
 import sys
+import ctypes
 import threading
 from typing_extensions import override
 import iceoryx2 as iox2
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from iceoryx.msg.DepthFrame_ import DepthFrame_
 from iceoryx.msg.RGBFrame_ import RGBFrame_
 from iceoryx.constants import DDS_TOPIC_SIM_CAMERA_RGB, DDS_TOPIC_SIM_CAMERA_DEPTH
 
-class SimCameraSubscriber(threading.Thread):
+# TODO: Inherit from thread
+class SimCameraSubscriber():
     def __init__(self):
-        super().__init__(daemon=True)
+        super().__init__()
         iox2.set_log_level_from_env_or(iox2.LogLevel.Debug)
 
         self._node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
@@ -46,7 +48,7 @@ class SimCameraSubscriber(threading.Thread):
             self._node.wait(self._cycle_time)
 
             while True:
-                sample = self._depth_service.receive()
+                sample = self._depth_sub.receive()
                 if sample is None:
                     break
                 print("recieved depth")
@@ -63,4 +65,24 @@ class SimCameraSubscriber(threading.Thread):
 
 
 main = SimCameraSubscriber()
-main.start()
+main.run()
+
+'''
+def verify_python_layout():
+    print("--- Python Layout Verification ---")
+    
+    # DepthFrame_
+    print(f"DepthFrame_ size: {ctypes.sizeof(DepthFrame_)} bytes")
+    print(f"  Offset 'width':     {DepthFrame_.width.offset}")
+    print(f"  Offset 'depth_min': {DepthFrame_.depth_min.offset}")
+    print(f"  Offset 'data':      {DepthFrame_.data.offset}")
+
+    # RGBFrame_
+    print(f"RGBFrame_ size: {ctypes.sizeof(RGBFrame_)} bytes")
+    print(f"  Offset 'width':  {RGBFrame_.width.offset}")
+    print(f"  Offset 'data':   {RGBFrame_.data.offset}")
+
+if __name__ == "__main__":
+    verify_python_layout()
+
+'''

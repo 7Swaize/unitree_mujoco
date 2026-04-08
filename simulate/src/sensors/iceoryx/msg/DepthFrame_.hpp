@@ -5,7 +5,6 @@
 
 // see: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/examples/cxx/complex_data_types/src/complex_data_types.cpp
 
-namespace ipc_msg {
 
 struct DepthFrame_ {
     static constexpr const char* IOX2_TYPE_NAME = "DepthFrame_";
@@ -16,7 +15,6 @@ struct DepthFrame_ {
     float depth_min;
     float depth_max;
 
-    std::array<float, FRAME_BUFFER_ELEMENTS_DEPTH> data;
+    float data[FRAME_BUFFER_ELEMENTS_DEPTH];
 };
 
-} // ipc_msg

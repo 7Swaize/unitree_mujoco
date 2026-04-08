@@ -20,20 +20,10 @@ class SimCameraSubscriber():
         self._node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
         self._depth_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_DEPTH)) \
                                         .publish_subscribe(DepthFrame_) \
-                                        .max_subscribers(1) \
-                                        .max_publishers(1) \
-                                        .subscriber_max_buffer_size(2) \
-                                        .subscriber_max_borrowed_samples(1) \
-                                        .history_size(1) \
                                         .open_or_create()
 
         self._rgb_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_RGB)) \
                                         .publish_subscribe(RGBFrame_) \
-                                        .max_subscribers(1) \
-                                        .max_publishers(1) \
-                                        .subscriber_max_buffer_size(2) \
-                                        .subscriber_max_borrowed_samples(1) \
-                                        .history_size(1) \
                                         .open_or_create()
 
         self._depth_sub = self._depth_service.subscriber_builder().create()

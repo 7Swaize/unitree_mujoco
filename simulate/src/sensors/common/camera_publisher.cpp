@@ -28,20 +28,10 @@ CameraPublisher::CameraPublisher(mjModel* model,
       iox2_node_(NodeBuilder().create<ServiceType::Ipc>().value()),
       depth_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_DEPTH).value())
                          .publish_subscribe<DepthFrame_>()
-                         .max_subscribers(1)
-                         .max_publishers(1)
-                         .subscriber_max_buffer_size(2) // we really only care about the most recent frame
-                         .subscriber_max_borrowed_samples(1)
-                         .history_size(1)
                          .open_or_create()
                          .value()),
       rgb_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_RGB).value())
                        .publish_subscribe<RGBFrame_>()
-                       .max_subscribers(1)
-                       .max_publishers(1)
-                       .subscriber_max_buffer_size(2)
-                       .subscriber_max_borrowed_samples(1)
-                       .history_size(1)
                        .open_or_create()
                        .value()),
       depth_pub_(depth_service_.publisher_builder().create().value()),
@@ -207,7 +197,8 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con);
 
         depth_transform_hyperbolic_to_linear(depth_buf.data(), depth_buf.size());
-        outer_->publish_depth(depth_buf.data(), depth_buf.size());
+        outer_->publish_depth(depth_buf.data(), FRAME_BUFFER_ELEMENTS_DEPTH);
+        outer_->publish_rgb(rgb_buf.data(), FRAME_BUFFER_ELEMENTS_RGB);
     }
 }
 

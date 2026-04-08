@@ -69,10 +69,10 @@ private:
     std::thread thread_;
  
     iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, DepthFrame, void> depth_service_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, RGBFrame, void> rgb_service_;
-    iox2::Publisher<iox2::ServiceType::Ipc, DepthFrame, void> depth_pub_;
-    iox2::Publisher<iox2::ServiceType::Ipc, RGBFrame, void> rgb_pub_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msgs::DepthFrame_, void> depth_service_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msgs::RGBFrame_, void> rgb_service_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::DepthFrame_, void> depth_pub_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::RGBFrame_, void> rgb_pub_;
  
     void publish_depth(float* data, const size_t size);
     void publish_rgb(unsigned char* data, const size_t size);

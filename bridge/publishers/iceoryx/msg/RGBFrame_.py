@@ -3,7 +3,7 @@ import ctypes
 from ..constants import *
 
 
-class RGBFrame(ctypes.Structure):
+class RGBFrame_(ctypes.Structure):
     _fields_ = [
         ("width", ctypes.c_uint32),
         ("height", ctypes.c_uint32),
@@ -12,4 +12,4 @@ class RGBFrame(ctypes.Structure):
 
     @staticmethod
     def type_name() -> str:
-        return "RGBFrame"
+        return "RGBFrame_"

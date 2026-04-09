@@ -1,17 +1,16 @@
 import os
 import sys
-import ctypes
 import threading
 import cv2
 import numpy as np
 import iceoryx2 as iox2
 from typing_extensions import override
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from iceoryx.msg.DepthFrame_ import DepthFrame_
-from iceoryx.msg.RGBFrame_ import RGBFrame_
-from iceoryx.constants import *
+from .iceoryx.msg.DepthFrame_ import DepthFrame_
+from .iceoryx.msg.RGBFrame_ import RGBFrame_
+from .iceoryx.constants import *
 
 class SimCameraSubscriber(threading.Thread):
     def __init__(self):
@@ -19,7 +18,7 @@ class SimCameraSubscriber(threading.Thread):
         iox2.set_log_level_from_env_or(iox2.LogLevel.Error)
 
         self._node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
-        self._depth_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_DEPTH)) \
+        self._depth_service = self._node.service_builder(iox2.ServiceName.new(IOX2_TOPIC_SIM_CAMERA_DEPTH)) \
                                         .publish_subscribe(DepthFrame_) \
                                         .max_publishers(IOX2_MAX_PUBLISHERS) \
                                         .max_subscribers(IOX2_MAX_SUBSCRIBERS) \
@@ -28,7 +27,7 @@ class SimCameraSubscriber(threading.Thread):
                                         .history_size(IOX2_HISTORY_SIZE) \
                                         .open_or_create()
 
-        self._rgb_service = self._node.service_builder(iox2.ServiceName.new(DDS_TOPIC_SIM_CAMERA_RGB)) \
+        self._rgb_service = self._node.service_builder(iox2.ServiceName.new(IOX2_TOPIC_SIM_CAMERA_RGB)) \
                                         .publish_subscribe(RGBFrame_) \
                                         .max_publishers(IOX2_MAX_PUBLISHERS) \
                                         .max_subscribers(IOX2_MAX_SUBSCRIBERS) \

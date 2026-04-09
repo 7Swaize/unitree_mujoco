@@ -187,7 +187,7 @@ VIEWER_DT = 0.02
 ### 游戏手柄
 仿真器会使用 Xbox 或者 Switch 游戏来模拟机器人的无线控制器，并将手柄按键和摇杆信息发布在"rt/wireless_controller" topic。如果手上没有可以使用的游戏手柄，需要将 `config.yaml/config.py` 中的 `use_joystick/USE_JOYSTICK` 设置为 0。如果使用的手柄不属于 Xbox 和 Switch 映射，可以在源码中自行修改或添加(可以使用 `jstest` 工具查看按键和摇杆 id)：
 
-In `simulate/src/unitree_sdk2_bridge/unitree_sdk2_bridge.cc`: 
+In `simulate/cpp/unitree_sdk2_bridge/unitree_sdk2_bridge.cc`: 
 ```C++
  if (js_type == "xbox")
 {

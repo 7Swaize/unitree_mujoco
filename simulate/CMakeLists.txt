@@ -19,24 +19,24 @@ find_package(iceoryx2-cxx REQUIRED)
 include_directories(
   mujoco/include
   mujoco/simulate
-  src/lodepng
-  src/sensors
-  src
+  cpp/lodepng
+  cpp/sensors
+  cpp
 )
 link_directories(mujoco/lib)
 
 file(GLOB SIM_SRC
-  src/joystick/joystick.cc
+  cpp/joystick/joystick.cc
 
   # exclude mujoco/simulate/main.cc
   mujoco/simulate/glfw_*.cc
   mujoco/simulate/platform_*.cc
   mujoco/simulate/simulate.cc
-  src/lodepng/lodepng.cpp
+  cpp/lodepng/lodepng.cpp
 
-  src/sensors/idl/ImageData_.cpp
-  src/sensors/common/camera_publisher.cpp
-  src/utils/simd.cpp
+  cpp/sensors/idl/ImageData_.cpp
+  cpp/sensors/common/camera_publisher.cpp
+  cpp/utils/simd.cpp
 )
 
 link_libraries(
@@ -49,9 +49,9 @@ link_libraries(
   fmt
 )
 
-add_executable(unitree_mujoco ${SIM_SRC} src/main.cc)
+add_executable(unitree_mujoco ${SIM_SRC} cpp/main.cc)
 
-add_executable(jstest src/joystick/jstest.cc src/joystick/joystick.cc)
+add_executable(jstest cpp/joystick/jstest.cc cpp/joystick/joystick.cc)
 
 target_link_libraries(unitree_mujoco PRIVATE iceoryx2-cxx::static-lib-cxx)
 target_link_libraries(jstest PRIVATE iceoryx2-cxx::static-lib-cxx)

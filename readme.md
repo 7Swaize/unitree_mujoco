@@ -180,7 +180,7 @@ VIEWER_DT = 0.02
 ### Joystick
 The simulator will use an Xbox or Switch gamepad  to simulate the wireless controller of the robot. The button and joystick information of the wireless controller will be published through "rt/wireless_controller" topic. `use_joystick/USE_JOYSTICK` in `config.yaml/config.py` needs to be set to 0, when there is no gamepad. If your gamepad is not in Xbox or Switch layout, you can modify it in the source code (The button and joystick IDs can be  determined  using `jstest`):
 
-In `simulate/src/unitree_sdk2_bridge/unitree_sdk2_bridge.cc`: 
+In `simulate/cpp/unitree_sdk2_bridge/unitree_sdk2_bridge.cc`: 
 ```C++
  if (js_type == "xbox")
 {

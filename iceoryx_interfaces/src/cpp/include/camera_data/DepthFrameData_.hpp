@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "iceoryx/constants.hpp"
+#include "../constants.hpp"
 
 
-namespace ipc_msgs {
+namespace iceoryx_interfaces {
 
-struct DepthFrame_ {
-    static constexpr const char* IOX2_TYPE_NAME = "DepthFrame_";
+struct DepthFrameData_ {
+    static constexpr const char* IOX2_TYPE_NAME = "DepthFrameData_";
 
     uint32_t width = FRAME_WIDTH;
     uint32_t height = FRAME_HEIGHT;
@@ -18,4 +18,4 @@ struct DepthFrame_ {
     float data[FRAME_BUFFER_ELEMENTS_DEPTH];
 };
 
-} // ipc_msgs
+}

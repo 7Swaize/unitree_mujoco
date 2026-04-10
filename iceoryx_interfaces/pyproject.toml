@@ -1,16 +1,21 @@
 [build-system]
-requires = ["scikit-build-core"]
-build-backend = "scikit_build_core.build"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 
 [project]
 name = "iceoryx_interfaces"
 version = "0.1.0"
+authors = [
+    { name="7Swaize" }
+]
 description = "Shared Iceoryx2 data definitions"
 requires-python = ">=3.10"
 dependencies = [
     "iceoryx2==0.8.1"
 ]
 
-[tool.scikit-build]
-wheel.install-dir = "src/python" 
-sdist.include = ["iceoryx_interfaces*"]
+
+[tool.setuptools.packages.find]
+where = ["src/python"]
+include = ["iceoryx_interfaces*"]

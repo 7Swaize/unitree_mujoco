@@ -1,0 +1,3 @@
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=path/to/iceoryx2/install
+cmake --build build
+cmake --install build

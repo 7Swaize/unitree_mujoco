@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(iceoryx_interfaces LANGUAGES CXX)
+project(iceoryx_interfaces
+    VERSION 0.1.0
+    LANGUAGES CXX
+)
 
 add_library(iceoryx_interfaces INTERFACE)
 
@@ -28,7 +31,14 @@ configure_package_config_file(
     INSTALL_DESTINATION lib/cmake/iceoryx_interfaces
 )
 
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/iceoryx_interfacesConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/iceoryx_interfacesConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/iceoryx_interfacesConfigVersion.cmake
     DESTINATION lib/cmake/iceoryx_interfaces
 )

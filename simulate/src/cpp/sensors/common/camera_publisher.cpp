@@ -1,6 +1,7 @@
 #include "camera_publisher.hpp"
 
 using namespace iox2;
+using namespace iceoryx_interfaces::camera;
 
 // CameraConfig
 
@@ -26,22 +27,22 @@ CameraPublisher::CameraPublisher(mjModel* model,
       cfg_(cam_cfg), 
       sim_mutex_(sim_mutex),
       iox2_node_(NodeBuilder().create<ServiceType::Ipc>().value()),
-      depth_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_DEPTH).value())
-                         .publish_subscribe<ipc_msgs::DepthFrame_>()
-                         .max_publishers(IOX2_MAX_PUBLISHERS)
-                         .max_subscribers(IOX2_MAX_SUBSCRIBERS)
-                         .subscriber_max_buffer_size(IOX2_SUBSCRIBER_MAX_BUFFER_SIZE)
-                         .subscriber_max_borrowed_samples(IOX2_SUBSCRIBER_MAX_BORROWED_SAMPLES)
-                         .history_size(IOX2_HISTORY_SIZE)
+      depth_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCameraDepth).value())
+                         .publish_subscribe<DepthFrameData_>()
+                         .max_publishers(kMaxPublishers)
+                         .max_subscribers(kMaxSubscribers)
+                         .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
+                         .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
+                         .history_size(kHistorySize)
                          .open_or_create()
                          .value()),
-      rgb_service_(iox2_node_.service_builder(ServiceName::create(DDS_TOPIC_SIM_CAMERA_RGB).value())
-                       .publish_subscribe<ipc_msgs::RGBFrame_>()
-                       .max_publishers(IOX2_MAX_PUBLISHERS)
-                       .max_subscribers(IOX2_MAX_SUBSCRIBERS)
-                       .subscriber_max_buffer_size(IOX2_SUBSCRIBER_MAX_BUFFER_SIZE)
-                       .subscriber_max_borrowed_samples(IOX2_SUBSCRIBER_MAX_BORROWED_SAMPLES)
-                       .history_size(IOX2_HISTORY_SIZE)
+      rgb_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCameraRgb).value())
+                       .publish_subscribe<RGBFrameData_>()
+                       .max_publishers(kMaxPublishers)
+                       .max_subscribers(kMaxSubscribers)
+                       .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
+                       .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
+                       .history_size(kHistorySize)
                        .open_or_create()
                        .value()),
       depth_pub_(depth_service_.publisher_builder().create().value()),
@@ -51,7 +52,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
  
-    offscreen_window_ = glfwCreateWindow(FRAME_WIDTH, FRAME_HEIGHT, "go2_camera_offscreen", nullptr, share_window);
+    offscreen_window_ = glfwCreateWindow(kFrameWidth, kFrameHeight, "go2_camera_offscreen", nullptr, share_window);
     glfwDefaultWindowHints();
 
     set_log_level_from_env_or(LogLevel::Error);
@@ -82,12 +83,12 @@ void CameraPublisher::stop() {
 
 void CameraPublisher::publish_depth(float* data) {
     auto sample = depth_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) ipc_msgs::DepthFrame_{};
+    new (&sample.payload_mut()) DepthFrameData_{};
     
     auto& payload = sample.payload_mut();
     payload.depth_min = cfg_.near_clip;
     payload.depth_max = cfg_.far_clip;
-    std::memcpy(payload.data, data, FRAME_BUFFER_ELEMENTS_DEPTH * sizeof(float));
+    std::memcpy(payload.data, data, kFrameBufferElementsDepth * sizeof(float));
 
 #ifndef __INTELLISENSE__
     auto initialized = assume_init(std::move(sample));
@@ -97,10 +98,10 @@ void CameraPublisher::publish_depth(float* data) {
 
 void CameraPublisher::publish_rgb(unsigned char* data) {
     auto sample = rgb_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) ipc_msgs::RGBFrame_{};
+    new (&sample.payload_mut()) RGBFrameData_{};
 
     auto& payload = sample.payload_mut();
-    std::memcpy(payload.data, reinterpret_cast<uint8_t*>(data), FRAME_BUFFER_ELEMENTS_RGB * sizeof(uint8_t));
+    std::memcpy(payload.data, reinterpret_cast<uint8_t*>(data), kFrameBufferElementsRgb * sizeof(uint8_t));
 
 #ifndef __INTELLISENSE__
     auto initialized = assume_init(std::move(sample));
@@ -158,10 +159,10 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     outer_->model_->vis.map.znear = outer_->cfg_.near_clip;
     outer_->model_->vis.map.zfar = outer_->cfg_.far_clip;
  
-    mjrRect viewport = {0, 0, FRAME_WIDTH, FRAME_HEIGHT};
+    mjrRect viewport = {0, 0, kFrameWidth, kFrameHeight};
     
-    std::vector<unsigned char> rgb_buf(FRAME_BUFFER_ELEMENTS_RGB);
-    std::vector<float, aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(FRAME_BUFFER_ELEMENTS_DEPTH);
+    std::vector<unsigned char> rgb_buf(kFrameBufferElementsRgb);
+    std::vector<float, aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(kFrameBufferElementsDepth);
 
     {
         assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));

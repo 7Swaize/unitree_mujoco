@@ -1,21 +1,19 @@
 #pragma once
 
 #include <cstdint>
-#include "../constants.hpp"
+#include "constants.hpp"
 
 
-namespace iceoryx_interfaces {
+namespace iceoryx_interfaces::camera {
+    struct DepthFrameData_ {
+        static constexpr const char* IOX2_TYPE_NAME = "DepthFrameData_";
 
-struct DepthFrameData_ {
-    static constexpr const char* IOX2_TYPE_NAME = "DepthFrameData_";
+        uint32_t width = kFrameWidth;
+        uint32_t height = kFrameHeight;
 
-    uint32_t width = FRAME_WIDTH;
-    uint32_t height = FRAME_HEIGHT;
+        float depth_min;
+        float depth_max;
 
-    float depth_min;
-    float depth_max;
-
-    float data[FRAME_BUFFER_ELEMENTS_DEPTH];
-};
-
+        float data[kFrameBufferElementsDepth];
+    };
 }

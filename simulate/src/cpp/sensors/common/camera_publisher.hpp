@@ -18,10 +18,11 @@
 #include "utils/aligned_allocator.hpp"
 
 #include "iox2/iceoryx2.hpp"
-#include "iceoryx/msg/DepthFrame_.hpp"
-#include "iceoryx/msg/RGBFrame_.hpp"
-#include "iceoryx/constants.hpp"
+#include "camera_data/DepthFrameData_.hpp"
+#include "camera_data/RGBFrameData_.hpp"
+#include "qos/camera_qos.hpp"
 
+namespace ioxifaces = iceoryx_interfaces::camera;
 
 struct DDSPublisherConfig {
     const int domain_id;
@@ -69,10 +70,10 @@ private:
     std::thread thread_;
  
     iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msgs::DepthFrame_, void> depth_service_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ipc_msgs::RGBFrame_, void> rgb_service_;
-    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::DepthFrame_, void> depth_pub_;
-    iox2::Publisher<iox2::ServiceType::Ipc, ipc_msgs::RGBFrame_, void> rgb_pub_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::DepthFrameData_, void> depth_service_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::RGBFrameData_, void> rgb_service_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::DepthFrameData_, void> depth_pub_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::RGBFrameData_, void> rgb_pub_;
  
     void publish_depth(float* data);
     void publish_rgb(unsigned char* data);

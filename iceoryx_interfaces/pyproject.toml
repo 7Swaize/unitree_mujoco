@@ -9,7 +9,7 @@ version = "0.1.0"
 authors = [
     { name="7Swaize" }
 ]
-description = "Shared Iceoryx2 data definitions"
+description = "Python Iceoryx2 data definitions"
 requires-python = ">=3.10"
 dependencies = [
     "iceoryx2==0.8.1"

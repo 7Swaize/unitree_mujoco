@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class CameraQoS:
-    TOPIC_SIM_CAMERA_DEPTH = "rt/sim/depth"
-    TOPIC_SIM_CAMERA_RGB = "rt/sim/rgb"
+    TOPIC_SIM_CAMERA_DEPTH = "sim/cam/depth"
+    TOPIC_SIM_CAMERA_RGB = "sim/cam/rgb"
     
     MAX_PUBLISHERS = 1
     MAX_SUBSCRIBERS = 1

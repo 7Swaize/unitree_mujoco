@@ -705,6 +705,9 @@ int main(int argc, char **argv)
   // Wire callbacks
   glfwSetKeyCallback(main_window,user_key_cb);
 
+  // IOX2 logging setting
+  iox2::set_log_level_from_env_or(iox2::LogLevel::Error);
+
   // Start camera publisher after physics sim
   std::thread cam_wait([&]()
   {

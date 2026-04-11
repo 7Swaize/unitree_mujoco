@@ -26,7 +26,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
       data_(data), 
       cfg_(cam_cfg), 
       sim_mutex_(sim_mutex),
-      iox2_node_(NodeBuilder().create<ServiceType::Ipc>().value()),
+      iox2_node_(NodeBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<ServiceType::Ipc>().value()),
       depth_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCameraDepth).value())
                          .publish_subscribe<DepthFrameData_>()
                          .max_publishers(kMaxPublishers)
@@ -54,8 +54,6 @@ CameraPublisher::CameraPublisher(mjModel* model,
  
     offscreen_window_ = glfwCreateWindow(kFrameWidth, kFrameHeight, "go2_camera_offscreen", nullptr, share_window);
     glfwDefaultWindowHints();
-
-    set_log_level_from_env_or(LogLevel::Error);
 }
 
 CameraPublisher::~CameraPublisher() {

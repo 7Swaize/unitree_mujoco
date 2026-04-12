@@ -8,7 +8,7 @@ from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
 from unitree_sdk2py.utils.crc import CRC
 
 from ..adapter import Adapter
-from ...constants import SIMULATION_DT, DDS_LOW_CMD_TOPIC
+from .constants import SIMULATION_DT, DDS_LOW_CMD_TOPIC
 
 
 class StandUp(Adapter):

@@ -671,17 +671,17 @@ int main(int argc, char **argv)
   mjvPerturb pert;
   mjv_defaultPerturb(&pert);
 
-  // Load simulation configuration
+  // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
-  param::config.load_from_yaml(proj_dir / "src" / "config" / "main.yaml");
+  param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml");
   param::helper(argc, argv);
   if(param::config.robot_scene.is_relative()) {
-    param::config.robot_scene = proj_dir.parent_path() / "unitree_robots" / param::config.robot / param::config.robot_scene;
+    param::config.robot_scene = proj_dir / "resources" / param::config.robot / param::config.robot_scene;
   }
 
-  // Load camera configuration
+  // load camera configuration
   CameraConfig cam_cfg;
-  auto yaml_dir = proj_dir / "src" / "config" / "sensors" / "camera.yaml";
+  auto yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
   if (std::filesystem::exists(yaml_dir)) {
     cam_cfg.load(yaml_dir);
   } else {
@@ -693,22 +693,22 @@ int main(int argc, char **argv)
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
 
-  // Create offscreen window for camera publishing.
+  // create offscreen window for camera publishing.
   GLFWwindow* main_window = static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_;
   
   std::unique_ptr<CameraPublisher> camera_pub;
 
-  // Start threads
+  // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
   std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
  
-  // Wire callbacks
+  // wire callbacks
   glfwSetKeyCallback(main_window,user_key_cb);
 
   // IOX2 logging setting
   iox2::set_log_level_from_env_or(iox2::LogLevel::Error);
 
-  // Start camera publisher after physics sim
+  // start camera publisher after physics sim
   std::thread cam_wait([&]()
   {
     while (!m || !d) std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -723,7 +723,7 @@ int main(int argc, char **argv)
 
   cam_wait.detach();
 
- // Start simulation UI loop (blocking call)
+ // start simulation UI loop (blocking call)
   sim->RenderLoop();
   physicsthreadhandle.join();
 

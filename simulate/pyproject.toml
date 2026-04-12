@@ -1,0 +1,24 @@
+[build-system]
+requires = ["scikit-build-core"]
+build-backend = "scikit_build_core.build"
+
+
+[project]
+name = "go2sim"
+version = "0.1.0"
+description = "Python package for Mujoco simulation CLI command"
+authors = [
+    { name = "7Swaize" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "iceoryx2==0.8.1"
+]
+
+
+[project.scripts]
+go2sim = "go2sim.cli:main"
+
+
+[tool.scikit-build]
+wheel.packages = ["src/python/go2sim"]

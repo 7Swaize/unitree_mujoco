@@ -11,10 +11,9 @@ from iceoryx_interfaces.sport_cmds import (
     NoArgsData_,
     FloatArgsData_
 )
-from iceoryx_interfaces.camera_data import DepthFrameData_
 
-from adapters import Adapter
-from adapters.sport import (
+from ..adapters import Adapter
+from ..adapters.sport import (
     Stop,
     StandDown,
     StandUp,
@@ -65,7 +64,7 @@ class SportBridge:
             SportCommand.STAND_UP: StandUp(crc=self._crc),
             SportCommand.STAND_DOWN: StandDown(crc=self._crc),
             SportCommand.MOVE: Move(crc=self._crc),
-            SportCommand.ROTATE: Move(crc=self._crc)
+            SportCommand.ROTATE: Rotate(crc=self._crc)
         }
 
     def _start(self) -> None:

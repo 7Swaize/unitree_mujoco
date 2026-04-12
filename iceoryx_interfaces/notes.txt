@@ -5,3 +5,4 @@ sudo cmake --install build
 
 For simulate:
 cmake -DCMAKE_PREFIX_PATH=/home/gsmst/iceoryx2/target/ff/cc/install ..
+export CMAKE_PREFIX_PATH=/home/gsmst/iceoryx2/target/ff/cc/install

@@ -2,8 +2,9 @@ import sys
 import threading
 import iceoryx2 as iox2
 from typing import Dict
-from unitree_sdk2py.utils.crc import CRC
-from unitree_sdk2py.core.channel import ChannelFactoryInitialize
+from unitree_sdk2py.utils.crc import CRC, LowCmd_
+from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
 from iceoryx_interfaces.mappings import SportCommand
 from iceoryx_interfaces.qos import SportQoS
 from iceoryx_interfaces.sport_cmds import (
@@ -12,6 +13,7 @@ from iceoryx_interfaces.sport_cmds import (
     FloatArgsData_
 )
 
+from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC
 from ..adapters import Adapter
 from ..adapters.sport import (
     Stop,
@@ -28,11 +30,12 @@ class SportBridge:
         self._stop_event = threading.Event()
         self._crc = CRC()
         
-        self._initialize_iox_services()
-        self._initialize_cyclonedds_services()
-        self._initialize_adapter_mappings()
+        self._init_iox_services()
+        self._init_cyclonedds_services()
+        self._init_adapter_mappings()
+        self._init_publishers
 
-    def _initialize_iox_services(self) -> None:
+    def _init_iox_services(self) -> None:
         iox2.set_log_level_from_env_or(iox2.LogLevel.Error)
         self._node = iox2.NodeBuilder.new() \
                         .signal_handling_mode(iox2.SignalHandlingMode.Disabled) \
@@ -52,20 +55,40 @@ class SportBridge:
         self._floatargs_sub = self._floatargs_service.subscriber_builder().create()
         self._cycle_time = iox2.Duration.from_millis(50) # 20 Hz polling should be fine? 
 
-    def _initialize_cyclonedds_services(self) -> None:
+    def _init_cyclonedds_services(self) -> None:
         if len(sys.argv) < 2:
             ChannelFactoryInitialize(1, "lo")
         else:
             ChannelFactoryInitialize(0, sys.argv[1])
 
-    def _initialize_adapter_mappings(self) -> None:
+    def _init_adapter_mappings(self) -> None:
         self._api_mappings: Dict[SportCommand, Adapter] = {
-            SportCommand.STOP: Stop(crc=self._crc),
-            SportCommand.STAND_UP: StandUp(crc=self._crc),
-            SportCommand.STAND_DOWN: StandDown(crc=self._crc),
-            SportCommand.MOVE: Move(crc=self._crc),
-            SportCommand.ROTATE: Rotate(crc=self._crc)
+            SportCommand.STOP: Stop(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
+            SportCommand.STAND_UP: StandUp(crc=self._crc, lowcmd_pub=self._pub, lowcmd=self._lowcmd),
+            SportCommand.STAND_DOWN: StandDown(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
+            SportCommand.MOVE: Move(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
+            SportCommand.ROTATE: Rotate(crc=self._crc, pub=self._pub, cmd=self._lowcmd)
         }
+
+    def _init_publishers(self) -> None:
+        self._pub = ChannelPublisher(DDS_LOW_CMD_TOPIC, LowCmd_)
+        self._pub.Init()
+        self._lowcmd = unitree_go_msg_dds__LowCmd_()
+        self._init_publishers(self._lowcmd)
+
+        self._lowcmd.head[0] = 0xFE
+        self._lowcmd.head[1] = 0xEF
+        self._lowcmd.level_flag = 0xFF
+        self._lowcmd.gpio = 0
+        
+        for i in range(20):
+            self._lowcmd.motor_cmd[i].mode = 0x01  # (PMSM) mode
+            self._lowcmd.motor_cmd[i].q = 0.0
+            self._lowcmd.motor_cmd[i].kp = 0.0
+            self._lowcmd.motor_cmd[i].dq = 0.0
+            self._lowcmd.motor_cmd[i].kd = 0.0
+            self._lowcmd.motor_cmd[i].tau = 0.0
+
 
     def _start(self) -> None:
         self._thread = threading.Thread(target=self._iox_thread, daemon=True)

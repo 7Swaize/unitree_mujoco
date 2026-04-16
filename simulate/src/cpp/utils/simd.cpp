@@ -7,9 +7,9 @@ namespace operations {
 
 LinDistMap::LinDistMap(float zn, float zf)
 #if !defined(SIMD_SCALAR)
-    : z_far_v(broadcast(zf)),
-      z_fn_prod_v(broadcast(zf * zn)),
-      z_fn_sub_v(broadcast(zf - zn)),
+    : z_far_v(broadcast_f32(zf)),
+      z_fn_prod_v(broadcast_f32(zf * zn)),
+      z_fn_sub_v(broadcast_f32(zf - zn)),
       z_far_f(zf), 
       z_fn_prod_f(zf * zn),
       z_fn_sub_f(zf - zn)

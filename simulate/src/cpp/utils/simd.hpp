@@ -44,30 +44,30 @@ namespace simd {
 #if defined(SIMD_AVX) || defined(SIMD_AVX2)
     using vec_f32 = __m256;
     constexpr std::size_t vec_width = 8;
-    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return _mm256_set1_ps(v); }
-    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return _mm256_load_ps(p); }
-    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { _mm256_store_ps(p, v); }
+    FORCE_INLINE vec_f32 broadcast_f32 (float v)              noexcept { return _mm256_set1_ps(v); }
+    FORCE_INLINE vec_f32 vec_load_f32  (const float* p)       noexcept { return _mm256_load_ps(p); }
+    FORCE_INLINE void    vec_store_f32 (float* p, vec_f32 v)  noexcept { _mm256_store_ps(p, v); }
  
 #elif defined(SIMD_SSE2)
     using vec_f32 = __m128;
     constexpr std::size_t vec_width = 4;
-    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return _mm_set1_ps(v); }
-    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return _mm_load_ps(p); }
-    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { _mm_store_ps(p, v); }
+    FORCE_INLINE vec_f32 broadcast_f32 (float v)              noexcept { return _mm_set1_ps(v); }
+    FORCE_INLINE vec_f32 vec_load_f32  (const float* p)       noexcept { return _mm_load_ps(p); }
+    FORCE_INLINE void    vec_store_f32 (float* p, vec_f32 v)  noexcept { _mm_store_ps(p, v); }
  
 #elif defined(SIMD_NEON)
     using vec_f32 = float32x4_t;
     constexpr std::size_t vec_width = 4;
-    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return vdupq_n_f32(v); }
-    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return vld1q_f32(p); }
-    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { vst1q_f32(p, v); }
+    FORCE_INLINE vec_f32 broadcast_f32 (float v)              noexcept { return vdupq_n_f32(v); }
+    FORCE_INLINE vec_f32 vec_load_f32  (const float* p)       noexcept { return vld1q_f32(p); }
+    FORCE_INLINE void    vec_store_f32 (float* p, vec_f32 v)  noexcept { vst1q_f32(p, v); }
  
 #else   // mock vectors -> 32 bits
     using vec_f32 = float;
     constexpr std::size_t vec_width = 1;
-    FORCE_INLINE vec_f32 broadcast (float v)              noexcept { return v; }
-    FORCE_INLINE vec_f32 vec_load  (const float* p)       noexcept { return *p; }
-    FORCE_INLINE void    vec_store (float* p, vec_f32 v)  noexcept { *p = v; }
+    FORCE_INLINE vec_f32 broadcast_f32 (float v)              noexcept { return v; }
+    FORCE_INLINE vec_f32 vec_load_f32  (const float* p)       noexcept { return *p; }
+    FORCE_INLINE void    vec_store_f32 (float* p, vec_f32 v)  noexcept { *p = v; }
 #endif
 
 } // simd
@@ -81,7 +81,7 @@ inline void transform_inplace(float* data, const std::size_t n, const Operation&
 
 #if !defined(SIMD_SCALAR)
     for (; i + vec_width <= n; i += vec_width) {
-        vec_store(data + i, op.apply(vec_load(data + i)));
+        vec_store_f32(data + i, op.apply(vec_load_f32(data + i)));
     }
 #endif
     for (; i < n; ++i) {

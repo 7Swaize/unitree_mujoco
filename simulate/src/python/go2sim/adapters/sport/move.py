@@ -9,10 +9,13 @@ from ..adapter import Adapter
 
 
 class Move(Adapter):
-    def __init__(self, crc: CRC, lowcmd_pub: ChannelPublisher, lowcmd: LowCmd_) -> None:
-        super().__init__(crc, lowcmd_pub, lowcmd)
+    @override
+    def set_floatargs(self, arg1: float, arg2: float) -> Adapter:
+        self._vx = arg1
+        self._vy = arg2
+        return self
 
-    
+
     @override
     def execute(self, start_pos: np.ndarray) -> np.ndarray:
         pass

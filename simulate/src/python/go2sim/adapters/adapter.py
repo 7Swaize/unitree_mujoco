@@ -20,3 +20,6 @@ class Adapter(ABC):
     @abstractmethod
     def execute(self, start_motor_pos: np.ndarray) -> np.ndarray:
         pass
+
+    def set_floatargs(self, arg1: float, arg2: float) -> "Adapter":
+        pass

@@ -9,8 +9,10 @@ from ..adapter import Adapter
 
 
 class Rotate(Adapter):
-    def __init__(self, crc: CRC, lowcmd_pub: ChannelPublisher, lowcmd: LowCmd_) -> None:
-        super().__init__(crc, lowcmd_pub, lowcmd)
+    @override
+    def set_floatargs(self, arg1: float, arg2: float) -> Adapter:
+        self._vrot = arg1
+        return self
 
     
     @override

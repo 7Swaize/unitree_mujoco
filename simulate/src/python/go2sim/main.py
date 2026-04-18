@@ -2,10 +2,9 @@ import asyncio
 from .bridge import SportBridge
 
 
+bridge = SportBridge()
 
 async def main():
-    bridge = SportBridge()
-
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, bridge.start)
 
@@ -18,3 +17,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+    finally:
+        bridge.shutdown()

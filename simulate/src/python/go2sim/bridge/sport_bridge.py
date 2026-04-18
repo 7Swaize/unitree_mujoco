@@ -107,20 +107,26 @@ class SportBridge:
                 
                 command = sample.user_header().contents.command
                 # This blocks, but iceoryx2 kindof already maintains a command buffer for us in shared memory
-                self._last_q = self._api_mappings[command].execute(self._last_q)
+                self._handle_noargs_cmd(command)
 
             while True:
                 sample = self._floatargs_sub.receive()
                 if sample is None:
                     break
-
+                
+                data = sample.payload().contents
                 command = sample.user_header().contents.command
-                self._last_q = self._api_mappings[command].execute(self._last_q)
+                self._handle_floatargs_cmd(command, data.arg1, data.arg2)
     
 
-    def shutdown(self) -> None:
-        self._cmd_manager.shutdown()
+    def _handle_noargs_cmd(self, command) -> None:
+        self._last_q = self._api_mappings[command].execute(self._last_q)
 
+    def _handle_floatargs_cmd(self, command, arg1: float, arg2: float) -> None:
+        self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q)
+
+
+    def shutdown(self) -> None:
         self._stop_event.set()
         if self._thread:
             self._thread.join()

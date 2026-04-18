@@ -13,6 +13,7 @@ from iceoryx_interfaces.sport_cmds import (
     FloatArgsData_
 )
 
+from .command_manager import CommandManager
 from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC
 from ..adapters import Adapter
 from ..adapters.sport import (
@@ -29,11 +30,13 @@ class SportBridge:
         self._thread = None
         self._stop_event = threading.Event()
         self._crc = CRC()
+
+        self._cmd_manager = CommandManager()
         
         self._init_iox_services()
         self._init_cyclonedds_services()
+        self._init_publishers()
         self._init_adapter_mappings()
-        self._init_publishers
 
     def _init_iox_services(self) -> None:
         iox2.set_log_level_from_env_or(iox2.LogLevel.Error)
@@ -63,18 +66,17 @@ class SportBridge:
 
     def _init_adapter_mappings(self) -> None:
         self._api_mappings: Dict[SportCommand, Adapter] = {
-            SportCommand.STOP: Stop(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
-            SportCommand.STAND_UP: StandUp(crc=self._crc, lowcmd_pub=self._pub, lowcmd=self._lowcmd),
-            SportCommand.STAND_DOWN: StandDown(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
-            SportCommand.MOVE: Move(crc=self._crc, pub=self._pub, cmd=self._lowcmd),
-            SportCommand.ROTATE: Rotate(crc=self._crc, pub=self._pub, cmd=self._lowcmd)
+            SportCommand.STOP: Stop(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
+            SportCommand.STAND_UP: StandUp(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
+            SportCommand.STAND_DOWN: StandDown(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
+            SportCommand.MOVE: Move(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
+            SportCommand.ROTATE: Rotate(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd)
         }
 
     def _init_publishers(self) -> None:
-        self._pub = ChannelPublisher(DDS_LOW_CMD_TOPIC, LowCmd_)
-        self._pub.Init()
+        self._lowcmd_pub = ChannelPublisher(DDS_LOW_CMD_TOPIC, LowCmd_)
+        self._lowcmd_pub.Init()
         self._lowcmd = unitree_go_msg_dds__LowCmd_()
-        self._init_publishers(self._lowcmd)
 
         self._lowcmd.head[0] = 0xFE
         self._lowcmd.head[1] = 0xEF
@@ -90,7 +92,8 @@ class SportBridge:
             self._lowcmd.motor_cmd[i].tau = 0.0
 
 
-    def _start(self) -> None:
+    def start(self) -> None:
+        self._cmd_manager.start()
         self._thread = threading.Thread(target=self._iox_thread, daemon=True)
         self._thread.start()
 
@@ -104,8 +107,7 @@ class SportBridge:
                     break
                 
                 command = sample.user_header().contents.command
-                # execute command or add to queue
-                self._api_mappings[command].execute()
+                self._cmd_manager.add_command(self._api_mappings[command])
 
             while True:
                 sample = self._floatargs_sub.receive()
@@ -113,11 +115,14 @@ class SportBridge:
                     break
 
                 command = sample.user_header().contents.command
-                # execute command or add to queue
-                self._api_mappings[command].execute()
+                self._cmd_manager.add_command(self._api_mappings[command])
+
+    
 
 
-    def _shutdown(self) -> None:
+    def shutdown(self) -> None:
+        self._cmd_manager.shutdown()
+
         self._stop_event.set()
         if self._thread:
             self._thread.join()

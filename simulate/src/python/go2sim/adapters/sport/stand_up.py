@@ -19,21 +19,18 @@ class StandUp(Adapter):
             0.00571868, 0.608813, -1.21763, -0.00571868, 0.608813, -1.21763
         ], dtype=float)
 
-        self._last_q = np.empty(12)
-
     
     @override
     def execute(self, start_pos: np.ndarray) -> np.ndarray:
         runtime = 0.0
-        duration = 1.2 # Actual total time for standing up or standing down is about 1.2s
-        self._last_q[:] = 0
+        duration = 3 # Actual total time for standing up or standing down is about 1.2s
+        self._last_q = start_pos
 
         while (runtime < duration):
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 
-            t = np.clip(runtime / self.duration, 0.0, 1.0)
-            phase = 3 * t**2 - 2 * t**3 # tanh doesnt actual ever equal 1, so we use this polynomial
+            phase = np.tanh(runtime / 1.2)
 
             for i in range(12):
                 target = phase * self._stand_up_join_pos[i] + (1 - phase) * start_pos[i]

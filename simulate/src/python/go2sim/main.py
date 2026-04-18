@@ -7,7 +7,7 @@ async def main():
     bridge = SportBridge()
 
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, bridge._start)
+    await loop.run_in_executor(None, bridge.start)
 
     while True:
         await asyncio.sleep(3600)

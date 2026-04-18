@@ -4,6 +4,7 @@ import numpy as np
 
 from ..adapters import Adapter
 from ..adapters.sport import Stop
+from ..adapters.sport.constants import STAND_DOWN_JOINT_POS
 
 
 class CommandManager:
@@ -12,7 +13,7 @@ class CommandManager:
         self._stop_event = threading.Event()
         self._cmd_buf = queue.Queue[Adapter]()
 
-        self._last_q: np.ndarray = np.empty(12)
+        self._last_q: np.ndarray = STAND_DOWN_JOINT_POS
 
     def add_command(self, cmd: Adapter) -> None:
         if isinstance(cmd, Stop):

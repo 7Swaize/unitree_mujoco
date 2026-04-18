@@ -50,6 +50,7 @@ if __name__ == '__main__':
         cmd.motor_cmd[i].tau = 0.0
 
     while True:
+        start = time.perf_counter()
         step_start = time.perf_counter()
 
         runing_time += dt
@@ -81,5 +82,8 @@ if __name__ == '__main__':
         pub.Write(cmd)
 
         time_until_next_step = dt - (time.perf_counter() - step_start)
+        end = time.perf_counter()
+        print(f"Execution time: {end - start} seconds")
+
         if time_until_next_step > 0:
             time.sleep(time_until_next_step)

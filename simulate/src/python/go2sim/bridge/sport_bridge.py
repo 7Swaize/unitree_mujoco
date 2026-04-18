@@ -1,5 +1,6 @@
 import sys
 import threading
+import numpy as np
 import iceoryx2 as iox2
 from typing import Dict
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
@@ -13,8 +14,7 @@ from iceoryx_interfaces.sport_cmds import (
     FloatArgsData_
 )
 
-from .command_manager import CommandManager
-from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC
+from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
 from ..adapters import Adapter
 from ..adapters.sport import (
     Stop,
@@ -31,7 +31,7 @@ class SportBridge:
         self._stop_event = threading.Event()
         self._crc = CRC()
 
-        self._cmd_manager = CommandManager()
+        self._last_q: np.ndarray = STAND_DOWN_JOINT_POS
         
         self._init_iox_services()
         self._init_cyclonedds_services()
@@ -93,7 +93,6 @@ class SportBridge:
 
 
     def start(self) -> None:
-        self._cmd_manager.start()
         self._thread = threading.Thread(target=self._iox_thread, daemon=True)
         self._thread.start()
 
@@ -107,7 +106,8 @@ class SportBridge:
                     break
                 
                 command = sample.user_header().contents.command
-                self._cmd_manager.add_command(self._api_mappings[command])
+                # This blocks, but iceoryx2 kindof already maintains a command buffer for us in shared memory
+                self._last_q = self._api_mappings[command].execute(self._last_q)
 
             while True:
                 sample = self._floatargs_sub.receive()
@@ -115,10 +115,8 @@ class SportBridge:
                     break
 
                 command = sample.user_header().contents.command
-                self._cmd_manager.add_command(self._api_mappings[command])
-
+                self._last_q = self._api_mappings[command].execute(self._last_q)
     
-
 
     def shutdown(self) -> None:
         self._cmd_manager.shutdown()

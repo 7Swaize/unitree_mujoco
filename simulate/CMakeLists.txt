@@ -108,20 +108,37 @@ if(DETECTED_NEON)
 endif()
 
 
-if(MSVC)
-  target_compile_options(go2sim_cpp PRIVATE
-    /O2
-    /fp:fast
-    /DNDEBUG
-    # DLLs do not use PICs: https://stackoverflow.com/questions/13309662/enable-pic-equivalent-in-visual-studio
-  )
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  message(STATUS "Debug Mode")
+  if(MSVC)
+    target_compile_options(go2sim_cpp PRIVATE
+      /Zi
+      /Od
+    )
+  else()
+    target_compile_options(go2sim_cpp PRIVATE
+      -g
+      -O0
+      -fPIC
+    )
+  endif()
 else()
-  target_compile_options(go2sim_cpp PRIVATE
-    -O3
-    -ffast-math
-    -DNDEBUG
-    -fPIC
-  )
+  message(STATUS "Release Mode")
+  if(MSVC)
+    target_compile_options(go2sim_cpp PRIVATE
+      /O2
+      /fp:fast
+      /DNDEBUG
+      # DLLs do not use PICs: https://stackoverflow.com/questions/13309662/enable-pic-equivalent-in-visual-studio
+    )
+  else()
+    target_compile_options(go2sim_cpp PRIVATE
+      -O3
+      -ffast-math
+      -DNDEBUG
+      -fPIC
+    )
+  endif()
 endif()
 
 

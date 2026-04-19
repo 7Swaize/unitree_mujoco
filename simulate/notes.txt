@@ -1,0 +1,5 @@
+pip install . -v \
+  --config-settings=logging.level=INFO \
+  --config-settings=cmake.build-type=Debug
+
+pip install . -v --config-settings=logging.level=INFO

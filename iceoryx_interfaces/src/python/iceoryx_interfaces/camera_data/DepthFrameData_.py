@@ -8,7 +8,7 @@ class DepthFrameData_(ctypes.Structure):
         ("height", ctypes.c_uint32),
         ("depth_min", ctypes.c_float),
         ("depth_max", ctypes.c_float),
-        ("data", ctypes.c_float * FRAME_BUFFER_ELEMENTS_DEPTH)
+        ("data", ctypes.c_uint16 * FRAME_BUFFER_ELEMENTS_DEPTH)
     ]
 
     @staticmethod

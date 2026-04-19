@@ -75,7 +75,7 @@ private:
     iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::DepthFrameData_, void> depth_pub_;
     iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::RGBFrameData_, void> rgb_pub_;
  
-    void publish_depth(float* data);
+    void publish_depth(uint16_t* data);
     void publish_rgb(unsigned char* data);
  
     class GLFWRenderHandler {
@@ -87,6 +87,6 @@ private:
         CameraPublisher* outer_;
  
         void renderLoop();
-        void depth_transform_hyperbolic_to_linear(float* data, const size_t size);
+        void depth_transform_hyperbolic_to_linear(float* in, uint16_t* out, const size_t size);
     };
 };

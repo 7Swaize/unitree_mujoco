@@ -79,14 +79,14 @@ void CameraPublisher::stop() {
     }
 }
 
-void CameraPublisher::publish_depth(float* data) {
+void CameraPublisher::publish_depth(uint16_t* data) {
     auto sample = depth_pub_.loan_uninit().value();
     new (&sample.payload_mut()) DepthFrameData_{};
     
     auto& payload = sample.payload_mut();
     payload.depth_min = cfg_.near_clip;
     payload.depth_max = cfg_.far_clip;
-    std::memcpy(payload.data, data, kFrameBufferElementsDepth * sizeof(float));
+    std::memcpy(payload.data, data, kFrameBufferElementsDepth * sizeof(uint16_t));
 
 #ifndef __INTELLISENSE__
     auto initialized = assume_init(std::move(sample));
@@ -161,9 +161,11 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     
     std::vector<unsigned char> rgb_buf(kFrameBufferElementsRgb);
     std::vector<float, aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(kFrameBufferElementsDepth);
+    std::vector<uint16_t, aligned_allocator<uint16_t, SIMD_ALIGNMENT>> depth_buf_ret(kFrameBufferElementsDepth);
 
     {
         assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));
+        assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf_ret.data()), SIMD_ALIGNMENT));
     }
 
     auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);
@@ -187,16 +189,16 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjr_render(viewport, &scn, &con);
         mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con);
 
-        depth_transform_hyperbolic_to_linear(depth_buf.data(), depth_buf.size());
-        outer_->publish_depth(depth_buf.data());
+        depth_transform_hyperbolic_to_linear(depth_buf.data(), depth_buf_ret.data(), depth_buf.size());
+        outer_->publish_depth(depth_buf_ret.data());
         outer_->publish_rgb(rgb_buf.data());
     }
 }
 
-void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(float* data, const size_t size) {
+void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(float* in, uint16_t* out, const size_t size) {
     // see: https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
     // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
     // avx: https://stackoverflow.com/questions/66260651/mm256-fmadd-ps-is-slower-than-mm256-mul-ps-mm256-add-ps
 
-    simd::transform_inplace(data, size, simd::operations::LinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip});
+    simd::transform(in, out, size, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip});
 }

@@ -116,35 +116,48 @@ class TerrainGenerator:
                     GeometryType.BOX
                 )
 
+    def add_aruco_marker(self,
+                         position=[1.0, 0.0, 0.0],
+                         euler=[0.0, 0.0, 0.0],
+                         size=[0.1, 0.1, 0.1],
+                         marker_num=1) -> None:
+        tex = ET.SubElement(self._asset, "texture")
+        tex.attrib["name"] = "aruco_tex_7x7_" + str(marker_num)
+        tex.attrib["type"] = "2d"
+        tex.attrib["file"] = "marker/marker_7x7_" + str(marker_num)
+
+        mat = ET.SubElement(self._asset, "material")
+        mat.attrib["name"] = "aruco_mat_7x7_" + str(marker_num)
+        mat.attrib["texture"] = "aruco_tex_7x7_" + str(marker_num)
+
+        geo = ET.SubElement(self._worldbody, "geom")
+        geo.attrib["pos"] = list_to_str(position)
+        geo.attrib["type"] = GeometryType.BOX.value
+        geo.attrib["size"] = list_to_str(0.5 * np.array(size)) # half size of box for mujoco
+        geo.attrib["quat"] = list_to_str(euler_to_quat(euler[0], euler[1], euler[2]))
+        geo.attrib["material"] = "aruco_mat_7x7_" + str(marker_num)
+    
+
     def save(self) -> None:
         ET.indent(self._root, space="    ", level=0)
         self._gen_scene.write(TerrainGenerator.GENERATED_SCENE_PATH)
+
+    def reset_to_base(self) -> None:
+        self._base_scene.write(TerrainGenerator.GENERATED_SCENE_PATH, encoding="utf-8", xml_declaration=True)
 
 
 if __name__ == "__main__":
     tg = TerrainGenerator()
 
-    # Box obstacle
-    tg.AddBox(position=[1.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[1, 1.5, 0.2])
-    
-    # Geometry obstacle
-    # geo_type supports "plane", "sphere", "capsule", "ellipsoid", "cylinder", "box"
-    tg.AddGeometry(position=[1.5, 0.0, 0.25], euler=[0, 0, 0.0], size=[1.0,0.5,0.5],geo_type="cylinder")
+    tg.add_geometry(position=[1.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[1, 1.5, 0.2], geo_type=GeometryType.BOX)
+    tg.add_geometry(position=[1.5, 0.0, 0.25], euler=[0, 0, 0.0], size=[1.0,0.5,0.5], geo_type=GeometryType.CYLINDER)
 
     # Slope
-    tg.AddBox(position=[2.0, 2.0, 0.5],
-              euler=[0.0, -0.5, 0.0],
-              size=[3, 1.5, 0.1])
+    tg.add_geometry(position=[2.0, 2.0, 0.5], euler=[0.0, -0.5, 0.0], size=[3, 1.5, 0.1], geo_type=GeometryType.BOX)
 
-    # Stairs
-    tg.AddStairs(init_pos=[1.0, 4.0, 0.0], yaw=0.0)
+    tg.add_stairs(init_pos=[1.0, 4.0, 0.0], yaw=0.0)
+    tg.add_suspend_stairs(init_pos=[1.0, 6.0, 0.0], yaw=0.0)
 
-    # Suspend stairs
-    tg.AddSuspendStairs(init_pos=[1.0, 6.0, 0.0], yaw=0.0)
-
-    # Rough ground
-    tg.AddRoughGround(init_pos=[-2.5, 5.0, 0.0],
-                      euler=[0, 0, 0.0],
-                      nums=[10, 8])
+    tg.add_rough_ground(init_pos=[-2.5, 5.0, 0.0], euler=[0, 0, 0.0], nums=[10, 8])
 
     tg.save()

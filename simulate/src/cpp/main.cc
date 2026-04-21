@@ -673,11 +673,7 @@ int main(int argc, char **argv)
 
   // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
-  param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml");
-  param::helper(argc, argv);
-  if(param::config.robot_scene.is_relative()) {
-    param::config.robot_scene = proj_dir / "resources" / param::config.robot / param::config.robot_scene;
-  }
+  param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml", proj_dir);
 
   // load camera configuration
   CameraConfig cam_cfg;

@@ -5,6 +5,7 @@ from typing_extensions import override
 from ..adapter import Adapter
 from .constants import SIMULATION_DT, STAND_UP_JOINT_POS
 
+# AI - Generated Experement File
 
 # Diagonal trot pairs: (FR=0, RL=3) and (FL=1, RR=2)
 # Each entry is the gait phase offset (radians) for that leg.

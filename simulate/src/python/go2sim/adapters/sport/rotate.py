@@ -5,6 +5,8 @@ from typing_extensions import override
 from ..adapter import Adapter
 from .constants import SIMULATION_DT, STAND_UP_JOINT_POS
 
+# AI - Generated Experement File
+
 # Diagonal trot — same phase pairs as Move (FR+RL, FL+RR).
 # Two-point cross-body support; dynamically stable.
 #

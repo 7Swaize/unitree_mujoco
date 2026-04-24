@@ -1,67 +1,24 @@
 import numpy as np
 from typing import Tuple, Union
+from scipy.spatial.transform import Rotation as R
 
+# ALL - XYZ input as degrees
 
-# zyx euler angle to quaternion
-def euler_to_quat(roll, pitch, yaw) -> np.ndarray:
-    cx = np.cos(roll / 2)
-    sx = np.sin(roll / 2)
-    cy = np.cos(pitch / 2)
-    sy = np.sin(pitch / 2)
-    cz = np.cos(yaw / 2)
-    sz = np.sin(yaw / 2)
+def euler_to_quat(x: float, y: float, z: float) -> np.ndarray:
+    quat = R.from_euler("xyz", [x, y, z], degrees=True).as_quat()
+    return np.array([quat[3], quat[0], quat[1], quat[2]]) # Mujoco uses wyxz quats
 
-    return np.array(
-        [
-            cx * cy * cz + sx * sy * sz,
-            sx * cy * cz - cx * sy * sz,
-            cx * sy * cz + sx * cy * sz,
-            cx * cy * sz - sx * sy * cz,
-        ],
-        dtype=np.float64
-    )
-
-# zyx euler angle to rotation matrix
-def euler_to_rot(roll, pitch, yaw) -> np.ndarray:
-    rot_x = np.array(
-        [
-            [1, 0, 0],
-            [0, np.cos(roll), -np.sin(roll)],
-            [0, np.sin(roll), np.cos(roll)],
-        ],
-        dtype=np.float64,
-    )
-
-    rot_y = np.array(
-        [
-            [np.cos(pitch), 0, np.sin(pitch)],
-            [0, 1, 0],
-            [-np.sin(pitch), 0, np.cos(pitch)],
-        ],
-        dtype=np.float64,
-    )
-    rot_z = np.array(
-        [
-            [np.cos(yaw), -np.sin(yaw), 0],
-            [np.sin(yaw), np.cos(yaw), 0],
-            [0, 0, 1],
-        ],
-        dtype=np.float64,
-    )
-
-    return rot_z @ rot_y @ rot_x
-
+def euler_to_rot(x: float, y: float, z: float) -> np.ndarray:
+    return R.from_euler("xyz", [x, y, z], degrees=True).as_matrix()
 
 def rot2d(x: float, y: float, yaw: float) -> Tuple[float, float]:
-    nx = x * np.cos(yaw) - y * np.sin(yaw)
-    ny = x * np.sin(yaw) + y * np.cos(yaw)
-    return nx, ny
-
+    rot = R.from_euler("z", yaw, degrees=True)
+    rotated = rot.apply([x, y, 0])
+    return rotated[0], rotated[1]
 
 def rot3d(pos: np.ndarray, euler: np.ndarray) -> np.ndarray:
-    R = euler_to_rot(euler[0], euler[1], euler[2])
-    return R @ pos
-
+    rot = R.from_euler("xyz", euler, degrees=True)
+    return rot.apply(pos)
 
 def list_to_str(vec: Union[list, np.ndarray]) -> str:
     return " ".join(str(s) for s in vec)

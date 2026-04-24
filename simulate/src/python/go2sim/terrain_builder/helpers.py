@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation as R
 
 def euler_to_quat(x: float, y: float, z: float) -> np.ndarray:
     quat = R.from_euler("xyz", [x, y, z], degrees=True).as_quat()
-    return np.array([quat[3], quat[0], quat[1], quat[2]]) # Mujoco uses wyxz quats
+    return np.array([quat[3], quat[0], quat[1], quat[2]]) # Mujoco uses wxyz quats
 
 def euler_to_rot(x: float, y: float, z: float) -> np.ndarray:
     return R.from_euler("xyz", [x, y, z], degrees=True).as_matrix()

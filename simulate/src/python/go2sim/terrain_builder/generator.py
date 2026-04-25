@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import xml.etree.ElementTree as ET
 from enum import Enum
@@ -29,10 +30,7 @@ class TerrainGenerator:
     def __init__(self) -> None:
         self._gen_scene = ET.parse(TerrainGenerator.GENERATED_SCENE_PATH)
         self._base_scene = ET.parse(TerrainGenerator.BASE_SCENE_PATH)
-
-        self._root = self._gen_scene.getroot()
-        self._worldbody = self._root.find("worldbody")
-        self._asset = self._root.find("asset")
+        self._reset_roots()
 
     def add_geometry(self,
                  position=[1.0, 0.0, 0.0],
@@ -144,10 +142,25 @@ class TerrainGenerator:
         self._gen_scene.write(TerrainGenerator.GENERATED_SCENE_PATH)
 
     def reset_to_base(self) -> None:
-        self._base_scene.write(TerrainGenerator.GENERATED_SCENE_PATH, encoding="utf-8", xml_declaration=True)
-        
+        self._base_scene.write(TerrainGenerator.GENERATED_SCENE_PATH, encoding="utf-8", xml_declaration=True)        
         self._gen_scene = ET.parse(TerrainGenerator.GENERATED_SCENE_PATH)
+        self._reset_roots()
+
+    def load_scene_from_path(self, path: str) -> None:
+        if not os.path.isfile(path):
+            raise FileNotFoundError("XML file at specified path was not found.")
+        
+        self._gen_scene = ET.parse(path)
+        self._gen_scene.write(TerrainGenerator.GENERATED_SCENE_PATH, encoding="utf-8", xml_declaration=True)
+        self._reset_roots()
+
+    def export_scene_to_directory(self, path: str) -> None:
+        if not os.path.exists(path):
+            raise FileNotFoundError("The specified path was not found.")
+        
+        self._gen_scene.write(os.path.join(path, "scene.xml"), encoding="utf-8", xml_declaration=True)
+
+    def _reset_roots(self) -> None:
         self._root = self._gen_scene.getroot()
         self._worldbody = self._root.find("worldbody")
         self._asset = self._root.find("asset")
-

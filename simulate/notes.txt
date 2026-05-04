@@ -3,3 +3,5 @@ pip install . -v \
   --config-settings=cmake.build-type=Debug
 
 pip install . -v --config-settings=logging.level=INFO
+
+export CMAKE_PREFIX_PATH=/home/gsmst/iceoryx2/target/ff/cc/install

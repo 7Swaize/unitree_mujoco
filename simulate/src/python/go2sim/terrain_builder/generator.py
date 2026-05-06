@@ -119,7 +119,10 @@ class TerrainGenerator:
                          position=[1.0, 0.0, 0.0],
                          euler=[0.0, 0.0, 0.0],
                          size=[0.1, 0.1, 0.1],
-                         marker_num=1) -> None:
+                         marker_num=0) -> None:
+        if marker_num < 0 or marker_num > 20:
+            raise ValueError("Parameter `marker_num` must be between 0 and 20 inclusive.")
+
         tex = ET.SubElement(self._asset, "texture")
         tex.attrib["name"] = "aruco_tex_7x7_" + str(marker_num)
         tex.attrib["type"] = "2d"

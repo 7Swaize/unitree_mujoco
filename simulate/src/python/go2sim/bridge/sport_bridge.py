@@ -119,11 +119,19 @@ class SportBridge:
     
 
     def _handle_noargs_cmd(self, command) -> None:
+        print(f"[HANDLE NOARGS] command={command} | thread={threading.get_ident()}")
+
         self._last_q = self._api_mappings[command].execute(self._last_q)
 
+        print("[HANDLE NOARGS DONE]")
+
     def _handle_floatargs_cmd(self, command, arg1: float, arg2: float) -> None:
+        print(f"[HANDLE FLOATARGS] command={command} | thread={threading.get_ident()}")
+        
         self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q)
         
+        print("[HANDLE FLOATARGS DONE]")
+
 
     def shutdown(self) -> None:
         self._stop_event.set()

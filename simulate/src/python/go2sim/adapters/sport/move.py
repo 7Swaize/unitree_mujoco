@@ -23,9 +23,9 @@ _LEG_PHASE_OFFSET = [0.0, np.pi, np.pi, 0.0]  # FR, FL, RR, RL
 # FR/RR hips are positive-outward; FL/RL are negative-outward.
 _HIP_LATERAL_SIGN = [1.0, -1.0, 1.0, -1.0]  # FR, FL, RR, RL
 
-_GAIT_FREQ      = 1.5    # Hz – comfortable walk/trot rate
-_STRIDE_AMP     = 0.18   # rad – max thigh excursion per unit vx (clipped to ±1 m/s)
-_LIFT_AMP       = 0.25   # rad – calf lift amplitude during swing
+_GAIT_FREQ = 1.7  # Increased from 1.5 Hz
+_STRIDE_AMP = 0.30  # Increased from 0.18 rad
+_LIFT_AMP = 0.30  # Slightly increased from 0.25 rad
 _LAT_AMP        = 0.04   # rad – hip abduction per unit vy (clipped to ±1 m/s)
 _MOVE_DURATION  = 3.0    # seconds per command invocation (matches StandUp/StandDown)
 

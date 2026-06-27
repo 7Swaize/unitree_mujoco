@@ -2,8 +2,7 @@
 #include <string_view>
 
 namespace iceoryx_interfaces::camera {
-    inline constexpr const char* kTopicSimCameraDepth = "sim/cam/depth";
-    inline constexpr const char* kTopicSimCameraRgb   = "sim/cam/rgb";
+    inline constexpr const char* kTopicSimCamera = "sim/cam";
 
     inline constexpr int kMaxPublishers = 1;
     inline constexpr int kMaxSubscribers = 1;

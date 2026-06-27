@@ -5,8 +5,8 @@
 
 
 namespace iceoryx_interfaces::camera {
-    struct DepthFrameData_ {
-        static constexpr const char* IOX2_TYPE_NAME = "DepthFrameData_";
+    struct FrameData_ {
+        static constexpr const char* IOX2_TYPE_NAME = "FrameData_";
 
         uint32_t width = kFrameWidth;
         uint32_t height = kFrameHeight;
@@ -14,6 +14,7 @@ namespace iceoryx_interfaces::camera {
         float depth_min;
         float depth_max;
 
-        uint16_t data[kFrameBufferElementsDepth];
+        uint8_t rgb_data[kFrameBufferElementsRgb];
+        uint16_t depth_data[kFrameBufferElementsDepth];
     };
 }

@@ -1,7 +1,6 @@
-from .DepthFrameData_ import DepthFrameData_
-from .RGBFrameData_ import RGBFrameData_
+from .FrameData_ import FrameData_
+
 
 __all__ = [
-    "DepthFrameData_",
-    "RGBFrameData_"
+    "FrameData_"
 ]

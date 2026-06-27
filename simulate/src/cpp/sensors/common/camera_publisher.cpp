@@ -27,8 +27,8 @@ CameraPublisher::CameraPublisher(mjModel* model,
       cfg_(cam_cfg), 
       sim_mutex_(sim_mutex),
       iox2_node_(NodeBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<ServiceType::Ipc>().value()),
-      depth_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCameraDepth).value())
-                         .publish_subscribe<DepthFrameData_>()
+      camera_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCamera).value())
+                         .publish_subscribe<FrameData_>()
                          .max_publishers(kMaxPublishers)
                          .max_subscribers(kMaxSubscribers)
                          .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
@@ -36,17 +36,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
                          .history_size(kHistorySize)
                          .open_or_create()
                          .value()),
-      rgb_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCameraRgb).value())
-                       .publish_subscribe<RGBFrameData_>()
-                       .max_publishers(kMaxPublishers)
-                       .max_subscribers(kMaxSubscribers)
-                       .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
-                       .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
-                       .history_size(kHistorySize)
-                       .open_or_create()
-                       .value()),
-      depth_pub_(depth_service_.publisher_builder().create().value()),
-      rgb_pub_(rgb_service_.publisher_builder().create().value())
+      camera_pub_(camera_service_.publisher_builder().create().value())
 {   
     // https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -79,14 +69,17 @@ void CameraPublisher::stop() {
     }
 }
 
-void CameraPublisher::publish_depth(uint16_t* data) {
-    auto sample = depth_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) DepthFrameData_{};
-    
+void CameraPublisher::publish_frames(unsigned char* rgb_data, uint16_t* depth_data) {
+    auto sample = camera_pub_.loan_uninit().value();
+    new (&sample.payload_mut()) FrameData_{};
+
     auto& payload = sample.payload_mut();
+
     payload.depth_min = cfg_.near_clip;
     payload.depth_max = cfg_.far_clip;
-    std::memcpy(payload.data, data, kFrameBufferElementsDepth * sizeof(uint16_t));
+
+    std::memcpy(payload.rgb_data, reinterpret_cast<uint8_t*>(rgb_data), kFrameBufferElementsRgb * sizeof(uint8_t));
+    std::memcpy(payload.depth_data, depth_data, kFrameBufferElementsDepth * sizeof(uint16_t));
 
 #ifndef __INTELLISENSE__
     auto initialized = assume_init(std::move(sample));
@@ -94,18 +87,6 @@ void CameraPublisher::publish_depth(uint16_t* data) {
 #endif
 }
 
-void CameraPublisher::publish_rgb(unsigned char* data) {
-    auto sample = rgb_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) RGBFrameData_{};
-
-    auto& payload = sample.payload_mut();
-    std::memcpy(payload.data, reinterpret_cast<uint8_t*>(data), kFrameBufferElementsRgb * sizeof(uint8_t));
-
-#ifndef __INTELLISENSE__
-    auto initialized = assume_init(std::move(sample));
-    send(std::move(initialized)).value();
-#endif
-}
 
 
 // CameraPublisher::GLFWRenderHandler
@@ -190,8 +171,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con);
 
         depth_transform_hyperbolic_to_linear(depth_buf.data(), depth_buf_ret.data(), depth_buf.size());
-        outer_->publish_depth(depth_buf_ret.data());
-        outer_->publish_rgb(rgb_buf.data());
+        outer_->publish_frames(rgb_buf.data(), depth_buf_ret.data());
     }
 }
 

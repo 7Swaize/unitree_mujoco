@@ -18,8 +18,7 @@
 #include "utils/aligned_allocator.hpp"
 
 #include "iox2/iceoryx2.hpp"
-#include "camera_data/DepthFrameData_.hpp"
-#include "camera_data/RGBFrameData_.hpp"
+#include "camera_data/FrameData_.hpp"
 #include "qos/camera_qos.hpp"
 
 namespace ioxifaces = iceoryx_interfaces::camera;
@@ -70,13 +69,10 @@ private:
     std::thread thread_;
  
     iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::DepthFrameData_, void> depth_service_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::RGBFrameData_, void> rgb_service_;
-    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::DepthFrameData_, void> depth_pub_;
-    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::RGBFrameData_, void> rgb_pub_;
+    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_service_;
+    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_pub_;
  
-    void publish_depth(uint16_t* data);
-    void publish_rgb(unsigned char* data);
+    void publish_frames(unsigned char* rgb_data, uint16_t* depth_data);
  
     class GLFWRenderHandler {
     public:

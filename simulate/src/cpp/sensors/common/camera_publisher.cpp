@@ -180,5 +180,5 @@ void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(fl
     // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
     // avx: https://stackoverflow.com/questions/66260651/mm256-fmadd-ps-is-slower-than-mm256-mul-ps-mm256-add-ps
 
-    simd::transform(in, out, size, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip});
+    simd::transform(in, out, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip}, size);
 }

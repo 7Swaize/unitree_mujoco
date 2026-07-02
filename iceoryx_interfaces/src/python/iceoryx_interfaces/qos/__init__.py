@@ -4,6 +4,6 @@ from .lidar_qos import LidarQoS
 
 __all__ = [
     "CameraQoS",
-    "SportQoS"
+    "SportQoS",
     "LidarQoS"
 ]

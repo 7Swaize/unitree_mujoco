@@ -7,3 +7,8 @@ class SportCommand(IntEnum):
     STAND_DOWN = auto()
     MOVE = auto()
     ROTATE = auto()
+
+
+class CommandKind(IntEnum):
+    NO_ARGS = auto()
+    FLOAT_ARGS = auto()

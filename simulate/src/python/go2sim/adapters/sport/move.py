@@ -1,4 +1,5 @@
 import time
+import threading
 import numpy as np
 from typing_extensions import override
 
@@ -38,7 +39,7 @@ class Move(Adapter):
         return self
 
     @override
-    def execute(self, start_pos: np.ndarray) -> np.ndarray:
+    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
         runtime = 0.0
         omega = 2.0 * np.pi * _GAIT_FREQ
 

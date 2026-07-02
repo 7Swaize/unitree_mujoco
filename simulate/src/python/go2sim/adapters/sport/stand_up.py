@@ -1,4 +1,5 @@
 import time
+import threading
 import numpy as np
 from typing_extensions import override
 
@@ -8,7 +9,7 @@ from .constants import SIMULATION_DT, STAND_UP_JOINT_POS
 
 class StandUp(Adapter):
     @override
-    def execute(self, start_pos: np.ndarray) -> np.ndarray:
+    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
         runtime = 0.0
         duration = 3 # Actual total time for standing up or standing down is about 1.2s
         self._last_q = start_pos.copy()
@@ -27,6 +28,8 @@ class StandUp(Adapter):
                 self._lowcmd.motor_cmd[i].kd = 3.5
                 self._lowcmd.motor_cmd[i].tau = 0.0
                 self._last_q[i] = target
+
+            print(f"runtime: {runtime}")
 
             self._lowcmd.crc = self._crc.Crc(self._lowcmd)
             self._lowcmd_pub.Write(self._lowcmd)

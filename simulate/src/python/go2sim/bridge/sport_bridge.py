@@ -1,12 +1,15 @@
+import time
 import sys
+import queue
 import threading
 import numpy as np
 import iceoryx2 as iox2
-from typing import Dict
+from typing import Dict, Any, Optional
+
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from iceoryx_interfaces.mappings import SportCommand
+from iceoryx_interfaces.mappings import SportCommand, CommandKind
 from iceoryx_interfaces.qos import SportQoS
 from iceoryx_interfaces.sport_cmds import (
     SportCommandHeader_,
@@ -27,8 +30,12 @@ from ..adapters.sport import (
 
 class SportBridge:
     def __init__(self):
-        self._thread = None
-        self._stop_event = threading.Event()
+        self._iox_thread_ref: Optional[threading.Thread] = None
+        self._command_thread_ref: Optional[threading.Thread] = None
+        self._shutdown_event: threading.Event = threading.Event()
+        self._adapter_stop_event: threading.Event = threading.Event()
+
+        self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
 
         self._last_q: np.ndarray = STAND_DOWN_JOINT_POS
@@ -93,11 +100,15 @@ class SportBridge:
 
 
     def start(self) -> None:
-        self._thread = threading.Thread(target=self._iox_thread, daemon=True)
-        self._thread.start()
+        self._iox_thread_ref = threading.Thread(target=self._iox_thread, daemon=True)
+        self._iox_thread_ref.start()
+
+        self._command_thread_ref = threading.Thread(target=self._command_thread, daemon=True)
+        self._command_thread_ref.start()
+
 
     def _iox_thread(self):
-        while not self._stop_event.is_set():
+        while not self._shutdown_event.is_set():
             self._node.wait(self._cycle_time)
 
             while True:
@@ -106,7 +117,7 @@ class SportBridge:
                     break
                 
                 command = sample.user_header().contents.command
-                self._handle_noargs_cmd(command)
+                self._enqueue((CommandKind.NO_ARGS, command, []))
 
             while True:
                 sample = self._floatargs_sub.receive()
@@ -115,26 +126,47 @@ class SportBridge:
                 
                 data = sample.payload().contents
                 command = sample.user_header().contents.command
-                self._handle_floatargs_cmd(command, data.arg1, data.arg2)
+                self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2]))
+
+    def _enqueue(self, item: tuple[CommandKind, SportCommand, list[Any]]) -> None:
+        try:
+            self._command_queue.put_nowait(item)
+        except queue.Full:
+            self._command_queue.get_nowait()
+            self._command_queue.put_nowait(item)
+
+    def _command_thread(self):
+        while not self._shutdown_event.is_set():
+            if self._command_queue.empty():
+                time.sleep(0.1)
+                continue
+
+            kind, command, args = self._command_queue.get(timeout=0.1)
+
+            print("going through loop")
+            if kind == CommandKind.NO_ARGS:
+                self._handle_noargs_cmd(command)
+            elif kind == CommandKind.FLOAT_ARGS:
+                self._handle_floatargs_cmd(command, *map(int, args))
     
-
-    def _handle_noargs_cmd(self, command) -> None:
+    def _handle_noargs_cmd(self, command: SportCommand) -> None:
         print(f"[HANDLE NOARGS] command={command} | thread={threading.get_ident()}")
-
-        self._last_q = self._api_mappings[command].execute(self._last_q)
-
+        self._last_q = self._api_mappings[command].execute(self._last_q, self._adapter_stop_event)
         print("[HANDLE NOARGS DONE]")
 
-    def _handle_floatargs_cmd(self, command, arg1: float, arg2: float) -> None:
+    def _handle_floatargs_cmd(self, command: SportCommand, arg1: float, arg2: float) -> None:
         print(f"[HANDLE FLOATARGS] command={command} | thread={threading.get_ident()}")
-        
-        self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q)
-        
+        self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q, self._adapter_stop_event)
         print("[HANDLE FLOATARGS DONE]")
 
 
     def shutdown(self) -> None:
-        self._stop_event.set()
-        if self._thread:
-            self._thread.join()
-            self._thread = None
+        self._shutdown_event.set()
+
+        if self._iox_thread_ref:
+            self._iox_thread_ref.join()
+            self._iox_thread_ref = None
+
+        if self._command_thread_ref:
+            self._command_thread_ref.join()
+            self._command_thread_ref = None

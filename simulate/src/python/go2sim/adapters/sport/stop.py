@@ -1,4 +1,5 @@
 import time
+import threading
 import numpy as np
 from typing_extensions import override
 
@@ -12,7 +13,7 @@ from ..adapter import Adapter
 
 class Stop(Adapter):
     @override
-    def execute(self, start_pos: np.ndarray) -> np.ndarray:
+    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
         runtime = 0.0
         STOP_DURATION = 0.5
 

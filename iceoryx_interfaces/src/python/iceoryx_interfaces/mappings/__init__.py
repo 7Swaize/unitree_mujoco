@@ -1,5 +1,6 @@
-from .sport_mappings import SportCommand
+from .sport_mappings import SportCommand, CommandKind
 
 __all__ = [
-    "SportCommand"
+    "SportCommand",
+    "CommandKind"
 ]

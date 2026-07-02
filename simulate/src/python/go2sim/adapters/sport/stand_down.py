@@ -1,4 +1,5 @@
 import time
+import threading
 import numpy as np
 from typing_extensions import override
 
@@ -8,7 +9,7 @@ from .constants import SIMULATION_DT, STAND_DOWN_JOINT_POS
 
 class StandDown(Adapter):   
     @override
-    def execute(self, start_pos: np.ndarray) -> np.ndarray:
+    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
         runtime = 0.0
         duration = 3 # Actual total time for standing up or standing down is about 1.2s
         self._last_q = start_pos.copy()

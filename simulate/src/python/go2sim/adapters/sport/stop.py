@@ -13,7 +13,7 @@ from ..adapter import Adapter
 
 class Stop(Adapter):
     @override
-    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
+    def execute(self, start_pos: np.ndarray, _: threading.Event) -> np.ndarray:
         runtime = 0.0
         STOP_DURATION = 0.5
 

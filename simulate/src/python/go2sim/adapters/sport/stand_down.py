@@ -14,7 +14,7 @@ class StandDown(Adapter):
         duration = 3 # Actual total time for standing up or standing down is about 1.2s
         self._last_q = start_pos.copy()
 
-        while (runtime < duration):
+        while runtime < duration and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 

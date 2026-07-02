@@ -14,7 +14,7 @@ class StandUp(Adapter):
         duration = 3 # Actual total time for standing up or standing down is about 1.2s
         self._last_q = start_pos.copy()
 
-        while (runtime < duration):
+        while runtime < duration and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 
@@ -28,8 +28,6 @@ class StandUp(Adapter):
                 self._lowcmd.motor_cmd[i].kd = 3.5
                 self._lowcmd.motor_cmd[i].tau = 0.0
                 self._last_q[i] = target
-
-            print(f"runtime: {runtime}")
 
             self._lowcmd.crc = self._crc.Crc(self._lowcmd)
             self._lowcmd_pub.Write(self._lowcmd)

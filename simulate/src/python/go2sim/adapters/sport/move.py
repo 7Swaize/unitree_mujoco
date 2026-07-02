@@ -48,7 +48,7 @@ class Move(Adapter):
         base_q = STAND_UP_JOINT_POS.copy()
         self._last_q = start_pos.copy()
 
-        while runtime < _MOVE_DURATION:
+        while runtime < _MOVE_DURATION and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 

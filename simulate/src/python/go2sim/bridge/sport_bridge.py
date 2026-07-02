@@ -45,6 +45,7 @@ class SportBridge:
         self._init_publishers()
         self._init_adapter_mappings()
 
+
     def _init_iox_services(self) -> None:
         iox2.set_log_level_from_env_or(iox2.LogLevel.Error)
         self._node = iox2.NodeBuilder.new() \
@@ -65,11 +66,13 @@ class SportBridge:
         self._floatargs_sub = self._floatargs_service.subscriber_builder().create()
         self._cycle_time = iox2.Duration.from_millis(50) # 20 Hz polling should be fine? 
 
+
     def _init_cyclonedds_services(self) -> None:
         if len(sys.argv) < 2:
             ChannelFactoryInitialize(1, "lo")
         else:
             ChannelFactoryInitialize(0, sys.argv[1])
+
 
     def _init_adapter_mappings(self) -> None:
         self._api_mappings: Dict[SportCommand, Adapter] = {
@@ -79,6 +82,7 @@ class SportBridge:
             SportCommand.MOVE: Move(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
             SportCommand.ROTATE: Rotate(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd)
         }
+
 
     def _init_publishers(self) -> None:
         self._lowcmd_pub = ChannelPublisher(DDS_LOW_CMD_TOPIC, LowCmd_)
@@ -117,6 +121,11 @@ class SportBridge:
                     break
                 
                 command = sample.user_header().contents.command
+                
+                if command == SportCommand.STOP:
+                    self._request_stop()
+                    break
+
                 self._enqueue((CommandKind.NO_ARGS, command, []))
 
             while True:
@@ -128,6 +137,7 @@ class SportBridge:
                 command = sample.user_header().contents.command
                 self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2]))
 
+
     def _enqueue(self, item: tuple[CommandKind, SportCommand, list[Any]]) -> None:
         try:
             self._command_queue.put_nowait(item)
@@ -135,29 +145,45 @@ class SportBridge:
             self._command_queue.get_nowait()
             self._command_queue.put_nowait(item)
 
+
     def _command_thread(self):
         while not self._shutdown_event.is_set():
-            if self._command_queue.empty():
-                time.sleep(0.1)
+            try:
+                kind, command, args = self._command_queue.get(timeout=0.1)
+            except queue.Empty:
                 continue
 
-            kind, command, args = self._command_queue.get(timeout=0.1)
+            if self._adapter_stop_event.is_set():
+                self._adapter_stop_event.clear()
 
-            print("going through loop")
             if kind == CommandKind.NO_ARGS:
                 self._handle_noargs_cmd(command)
             elif kind == CommandKind.FLOAT_ARGS:
-                self._handle_floatargs_cmd(command, *map(int, args))
-    
+                self._handle_floatargs_cmd(command, *map(float, args))
+        
+
     def _handle_noargs_cmd(self, command: SportCommand) -> None:
         print(f"[HANDLE NOARGS] command={command} | thread={threading.get_ident()}")
         self._last_q = self._api_mappings[command].execute(self._last_q, self._adapter_stop_event)
         print("[HANDLE NOARGS DONE]")
 
+
     def _handle_floatargs_cmd(self, command: SportCommand, arg1: float, arg2: float) -> None:
         print(f"[HANDLE FLOATARGS] command={command} | thread={threading.get_ident()}")
         self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q, self._adapter_stop_event)
         print("[HANDLE FLOATARGS DONE]")
+
+
+    def _request_stop(self) -> None:
+        while True:
+            try:
+                self._command_queue.get_nowait()
+                self._command_queue.task_done()
+            except queue.Empty:
+                break
+
+        self._adapter_stop_event.set()
+        self._enqueue((CommandKind.NO_ARGS, SportCommand.STOP, []))
 
 
     def shutdown(self) -> None:

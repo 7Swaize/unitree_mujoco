@@ -9,12 +9,13 @@ from typing import Dict, Any, Optional
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from iceoryx_interfaces.mappings import SportCommand, CommandKind
+from iceoryx_interfaces.mappings import SportCommand, CommandKind, CommandStatus
 from iceoryx_interfaces.qos import SportQoS
 from iceoryx_interfaces.sport_cmds import (
     SportCommandHeader_,
     NoArgsData_,
-    FloatArgsData_
+    FloatArgsData_,
+    CommandResponse_
 )
 
 from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
@@ -35,7 +36,7 @@ class SportBridge:
         self._shutdown_event: threading.Event = threading.Event()
         self._adapter_stop_event: threading.Event = threading.Event()
 
-        self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any]]] = queue.Queue(maxsize=3)
+        self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
 
         self._last_q: np.ndarray = STAND_DOWN_JOINT_POS
@@ -53,17 +54,17 @@ class SportBridge:
                         .create(iox2.ServiceType.Ipc)
         
         self._noargs_service = self._node.service_builder(iox2.ServiceName.new(SportQoS.TOPIC_SIM_NOARGS_CMD)) \
-                                    .publish_subscribe(NoArgsData_) \
-                                    .user_header(SportCommandHeader_) \
+                                    .request_response(NoArgsData_, CommandResponse_) \
+                                    .request_header(SportCommandHeader_) \
                                     .open_or_create()
         
         self._floatargs_service = self._node.service_builder(iox2.ServiceName.new(SportQoS.TOPIC_SIM_FLOATARGS_CMD)) \
-                                    .publish_subscribe(FloatArgsData_) \
-                                    .user_header(SportCommandHeader_) \
+                                    .request_response(FloatArgsData_, CommandResponse_) \
+                                    .request_header(SportCommandHeader_) \
                                     .open_or_create()
         
-        self._noargs_sub = self._noargs_service.subscriber_builder().create()
-        self._floatargs_sub = self._floatargs_service.subscriber_builder().create()
+        self._noargs_server = self._noargs_service.server_builder().create()
+        self._floatargs_server = self._floatargs_service.server_builder().create()
         self._cycle_time = iox2.Duration.from_millis(50) # 20 Hz polling should be fine? 
 
 
@@ -116,40 +117,52 @@ class SportBridge:
             self._node.wait(self._cycle_time)
 
             while True:
-                sample = self._noargs_sub.receive()
-                if sample is None:
+                active_request = self._noargs_server.receive()
+                if active_request is None:
                     break
                 
-                command = sample.user_header().contents.command
-                
+                command = active_request.user_header().contents.command
+                track = active_request.user_header().contents.track
+
+                if not track:
+                    active_request.delete()
+                    active_request = None
+
                 if command == SportCommand.STOP:
-                    self._request_stop()
+                    self._request_stop(active_request)
                     break
 
-                self._enqueue((CommandKind.NO_ARGS, command, []))
+                self._enqueue((CommandKind.NO_ARGS, command, [], active_request))
 
             while True:
-                sample = self._floatargs_sub.receive()
-                if sample is None:
+                active_request = self._floatargs_server.receive()
+                if active_request is None:
                     break
                 
-                data = sample.payload().contents
-                command = sample.user_header().contents.command
-                self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2]))
+                data = active_request.payload().contents
+                command = active_request.user_header().contents.command
+                track = active_request.user_header().contents.track
+
+                if not track:
+                    active_request.delete()
+                    active_request = None
+                    
+                self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2], active_request))
 
 
-    def _enqueue(self, item: tuple[CommandKind, SportCommand, list[Any]]) -> None:
+    def _enqueue(self, item: tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]) -> None:
         try:
             self._command_queue.put_nowait(item)
         except queue.Full:
-            self._command_queue.get_nowait()
+            evicted = self._command_queue.get_nowait()
+            self._respond(evicted[3], CommandStatus.SUPERSEDED)
             self._command_queue.put_nowait(item)
 
 
     def _command_thread(self):
         while not self._shutdown_event.is_set():
             try:
-                kind, command, args = self._command_queue.get(timeout=0.1)
+                kind, command, args, active_request = self._command_queue.get(timeout=0.1)
             except queue.Empty:
                 continue
 
@@ -157,33 +170,51 @@ class SportBridge:
                 self._adapter_stop_event.clear()
 
             if kind == CommandKind.NO_ARGS:
-                self._handle_noargs_cmd(command)
+                self._handle_noargs_cmd(command, active_request)
             elif kind == CommandKind.FLOAT_ARGS:
-                self._handle_floatargs_cmd(command, *map(float, args))
+                self._handle_floatargs_cmd(command, active_request, *map(float, args))
         
 
-    def _handle_noargs_cmd(self, command: SportCommand) -> None:
+    def _handle_noargs_cmd(self, command: SportCommand, active_request: Optional[iox2.ActiveRequest]) -> None:
         print(f"[HANDLE NOARGS] command={command} | thread={threading.get_ident()}")
+
         self._last_q = self._api_mappings[command].execute(self._last_q, self._adapter_stop_event)
+        status = CommandStatus.INTERRUPTED if self._adapter_stop_event.is_set() else CommandStatus.OK
+        self._respond(active_request, status)
+
         print("[HANDLE NOARGS DONE]")
 
 
-    def _handle_floatargs_cmd(self, command: SportCommand, arg1: float, arg2: float) -> None:
+    def _handle_floatargs_cmd(self, command: SportCommand, active_request: Optional[iox2.ActiveRequest], arg1: float, arg2: float) -> None:
         print(f"[HANDLE FLOATARGS] command={command} | thread={threading.get_ident()}")
+
         self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q, self._adapter_stop_event)
+        status = CommandStatus.INTERRUPTED if self._adapter_stop_event.is_set() else CommandStatus.OK
+        self._respond(active_request, status)
+
         print("[HANDLE FLOATARGS DONE]")
 
 
-    def _request_stop(self) -> None:
+    def _respond(self, active_request: Optional[iox2.ActiveRequest], status: CommandStatus) -> None:
+        if active_request is None:
+            return
+        
+        response = active_request.loan_uninit()
+        response = response.write_payload(CommandResponse_(status=status))
+        response.send()
+        active_request.delete()
+
+
+    def _request_stop(self, active_request: Optional[iox2.ActiveRequest]) -> None:
         while True:
             try:
-                self._command_queue.get_nowait()
-                self._command_queue.task_done()
+                item = self._command_queue.get_nowait()
+                self._respond(item[3], CommandStatus.CANCELLED)
             except queue.Empty:
                 break
 
         self._adapter_stop_event.set()
-        self._enqueue((CommandKind.NO_ARGS, SportCommand.STOP, []))
+        self._enqueue((CommandKind.NO_ARGS, SportCommand.STOP, [], active_request))
 
 
     def shutdown(self) -> None:
@@ -196,3 +227,10 @@ class SportBridge:
         if self._command_thread_ref:
             self._command_thread_ref.join()
             self._command_thread_ref = None
+
+        while True:
+            try:
+                item = self._command_queue.get_nowait()
+                self._respond(item[3], CommandStatus.CANCELLED)
+            except queue.Empty:
+                break

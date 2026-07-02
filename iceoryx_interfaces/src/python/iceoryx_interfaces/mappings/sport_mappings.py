@@ -12,3 +12,10 @@ class SportCommand(IntEnum):
 class CommandKind(IntEnum):
     NO_ARGS = auto()
     FLOAT_ARGS = auto()
+
+
+class CommandStatus(IntEnum):
+    OK = auto()
+    INTERRUPTED = auto()
+    SUPERSEDED = auto()
+    CANCELLED = auto()

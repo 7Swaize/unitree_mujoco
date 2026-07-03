@@ -196,7 +196,7 @@ class SportBridge:
 
 
     def _respond(self, active_request: Optional[iox2.ActiveRequest], status: CommandStatus) -> None:
-        if active_request is None:
+        if active_request is None or not active_request.is_connected:
             return
         
         response = active_request.loan_uninit()
@@ -230,6 +230,7 @@ class SportBridge:
 
         while True:
             try:
+                self._adapter_stop_event.set() # TODO: see if we can just remove this
                 item = self._command_queue.get_nowait()
                 self._respond(item[3], CommandStatus.CANCELLED)
             except queue.Empty:

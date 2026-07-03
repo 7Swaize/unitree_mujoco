@@ -8,14 +8,12 @@ async def main():
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, bridge.start)
 
-    while True:
-        await asyncio.sleep(3600)
+    try:
+        await asyncio.Event().wait()
+    finally:
+        print("starting shutdown")
+        bridge.shutdown()
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
-    finally:
-        bridge.shutdown()
+    asyncio.run(main())

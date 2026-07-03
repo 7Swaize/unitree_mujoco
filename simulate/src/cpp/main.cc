@@ -28,7 +28,6 @@
 #include <new>
 #include <string>
 #include <thread>
-#include <unistd.h>
 
 #include <mujoco/mujoco.h>
 #include "simulate.h"
@@ -104,16 +103,6 @@ namespace
 
   // control noise variables
   mjtNum *ctrlnoise = nullptr;
-
-  mj::Simulate *g_sim = nullptr;
-
-  void handle_signal(int)
-  {
-    if (g_sim)
-    {
-      g_sim->exitrequest.store(true, std::memory_order_relaxed);
-    }
-  }
 
   using Seconds = std::chrono::duration<double>;
 
@@ -579,6 +568,8 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
   free(ctrlnoise);
   mj_deleteData(d);
   mj_deleteModel(m);
+
+  exit(0);
 }
 
 void *UnitreeSdk2BridgeThread(void *arg)
@@ -698,15 +689,6 @@ int main(int argc, char **argv)
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
 
-  g_sim = sim.get();
-
-  struct sigaction sa{};
-  sa.sa_handler = handle_signal;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  sigaction(SIGINT, &sa, nullptr);
-  sigaction(SIGTERM, &sa, nullptr);
-
   // create offscreen window for camera publishing.
   GLFWwindow* main_window = static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_;
   
@@ -714,7 +696,6 @@ int main(int argc, char **argv)
 
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
-  unitree_thread.detach();
   std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
  
   // wire callbacks
@@ -744,5 +725,6 @@ int main(int argc, char **argv)
 
   if (camera_pub) camera_pub->stop();
 
-  std::exit(0);
+  pthread_exit(NULL);
+  return 0;
 }

@@ -1,5 +1,4 @@
 import asyncio
-import signal
 from .bridge import SportBridge
 
 
@@ -9,17 +8,10 @@ async def main():
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, bridge.start)
 
-    stop_event = asyncio.Event()
-
-    def _request_shutdown():
-        stop_event.set()
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _request_shutdown)
-
     try:
-        await stop_event.wait()
+        await asyncio.Event().wait()
     finally:
+        print("starting shutdown")
         bridge.shutdown()
 
 

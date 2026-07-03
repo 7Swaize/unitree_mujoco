@@ -230,7 +230,7 @@ class SportBridge:
 
         while True:
             try:
-                self._adapter_stop_event.set() # TODO: see if we can just remove this
+                self._adapter_stop_event.set()
                 item = self._command_queue.get_nowait()
                 self._respond(item[3], CommandStatus.CANCELLED)
             except queue.Empty:

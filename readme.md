@@ -5,10 +5,10 @@ This is a simulator developed based on `Unitree SDK2` and `Mujoco`. This is **FO
 This simulator is intended to be used with the [Go2-Control Wrapper](https://github.com/7Swaize/go2-control.git). **ALL** dependency information, installations, and API Documentation are listed there.
 
 ## Directory Structure
-- `iceoryx_interfaces`: Shared Iceoryx2 client-server configurations needed for IPC
-- `simulate\resources`: Resources used to load the robot model and scene
-- `simulate/src/cpp`: Core Mujoco Simulation written in C++
-- `simulate/src/python`: Python bridge between the `go2-control` wrapper and the C++ simulation
+- `iceoryx_interfaces/`: Shared Iceoryx2 client-server configurations needed for IPC
+- `simulate/resources/`: Resources used to load the robot model and scene
+- `simulate/src/cpp/`: Core Mujoco Simulation written in C++
+- `simulate/src/python/`: Python bridge between the `go2-control` wrapper and the C++ simulation
 
 ## Internally Supported Unitree SDK2 Messages:
 **Current version only supports low-level development, mainly used for sim to real verification of controller**

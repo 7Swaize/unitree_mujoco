@@ -10,7 +10,7 @@ Joystick functionality is technically preserved.
 - `iceoryx_interfaces/`: Shared Iceoryx2 client-server configurations needed for IPC
 - `simulate/resources/`: Resources used to load the robot model and scene
 - `simulate/src/cpp/`: Core Mujoco Simulation written in C++
-- `simulate/src/python/`: Python bridge between the `go2-control` wrapper and the C++ simulation
+- `simulate/src/python/`: Python bridge between the [Go2-Control Wrapper](https://github.com/7Swaize/go2-control.git) and the C++ simulation
 
 ## Internally Supported Unitree SDK2 Messages:
 **Current version only supports low-level development, mainly used for sim to real verification of controller**

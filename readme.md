@@ -1,14 +1,14 @@
 # Introduction
 ## Unitree mujoco
-`unitree_mujoco` is a simulator developed based on `Unitree sdk2` and `mujoco`. Users can easily integrate the control programs developed with `Unitree_sdk2`, `unitree_ros2`, and `unitree_sdk2_python` into this simulator, enabling a seamless transition from simulation to physical development. The repository includes two versions of the simulator implemented in C++ and Python, with a structure as follows:
-![](./doc/func.png)
+`unitree_mujoco` is a simulator developed based on `Unitree sdk2` and `mujoco`. This is **FORK** of the original and much has changed. 
+
+This simulator is intended to be used with the [Go2-Control Wrapper](https://github.com/7Swaize/go2-control.git). **ALL** dependency information, installations, and API Documentation are listed there.
 
 ## Directory Structure
-- `simulate`: Simulator implemented based on unitree_sdk2 and mujoco (C++, recommended)
-- `simulate_python`: Simulator implemented based on unitree_sdk2_python and mujoco (Python)
-- `unitree_robots`: MJCF description files for robots supported by unitree_sdk2
-- `terrain_tool`: Tool for generating terrain in simulation scenarios
-- `example`: Example programs
+- 'iceoryx_interfaces': Shared Iceoryx2 client-server configurations needed for IPC
+- `simulate\resources`: Resources used to load the robot model and scene
+- `simulate/src/cpp`: Core Mujoco Simulation written in C++
+- `simulate/src/python`: Python bridge between the `go2-control` wrapper and the C++ simulation
 
 ## Supported Unitree sdk2 Messages:
 **Current version only supports low-level development, mainly used for sim to real verification of controller**

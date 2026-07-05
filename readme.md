@@ -10,7 +10,7 @@ This simulator is intended to be used with the [Go2-Control Wrapper](https://git
 - `simulate/src/cpp`: Core Mujoco Simulation written in C++
 - `simulate/src/python`: Python bridge between the `go2-control` wrapper and the C++ simulation
 
-## Supported Unitree sdk2 Messages:
+## Internally Supported Unitree SDK2 Messages:
 **Current version only supports low-level development, mainly used for sim to real verification of controller**
 - `LowCmd`: Motor control commands
 - `LowState`: Motor state information
@@ -21,105 +21,9 @@ Note:
 1. The numbering of the motors corresponds to the actual robot hardware. Specific details can be found in the [Unitree documentation](https://support.unitree.com/home/zh/developer).
 2. In the actual robot hardware, the `SportModeState` message is not readable after the built-in motion control service is turned off. However, the simulator retains this message to allow users to utilize the position and velocity information for analyzing the developed control programs.
 
-## Related links
-- [unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2)
-- [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python)
-- [unitree_ros2](https://github.com/unitreerobotics/unitree_ros2)
-- [Unitree Doc](https://support.unitree.com/home/zh/developer)
-- [Mujoco Doc](https://mujoco.readthedocs.io/en/stable/overview.html)
-
-## Message (DDS idl) type description
+## Message (DDS IDL) Type Description
 - Unitree Go2, B2, H1, B2w, Go2w robots use unitree_go idl for low-level communication.
 - Unitree G1, H1-2 robot uses unitree_hg idl for low-level communication.
-
-
-# Installation
-## C++ Simulator (simulate)
-### 1. Dependencies
-
-```bash
-sudo apt install libyaml-cpp-dev libspdlog-dev libboost-all-dev libglfw3-dev
-```
-
-#### unitree_sdk2
-It is recommended to install `unitree_sdk2` in `/opt/unitree_robotics` path.
-```bash
-git clone https://github.com/unitreerobotics/unitree_sdk2.git
-cd unitree_sdk2/
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt/unitree_robotics
-sudo make install
-```
-For more details, see: https://github.com/unitreerobotics/unitree_sdk2
-#### mujoco
-
-Download the mujoco [release](https://github.com/google-deepmind/mujoco/releases), and extract it to the `~/.mujoco` directory;
-
-```
-cd unitree_mujoco/simulate/
-ln -s ~/.mujoco/mujoco-3.3.6 mujoco
-```
-
-### 2. Compile unitree_mujoco
-```bash
-cd unitree_mujoco/simulate
-mkdir build && cd build
-cmake ..
-make -j4
-```
-### 3. Test:
-Run:
-```bash
-./unitree_mujoco -r go2 -s scene_terrain.xml
-```
-You should see the mujoco simulator with the Go2 robot loaded.
-In a new terminal, run:
-```bash
-./test
-```
-The program will output the robot's pose and position information in the simulator, and each motor of the robot will continuously output 1Nm of torque.
-
-**Note:** The testing program sends the unitree_go message. If you want to test G1 robot, you need to modify the program to use the unitree_hg message.
-
-## Python Simulator (simulate_python)
-### 1. Dependencies
-#### unitree_sdk2_python
-```bash
-cd ~
-sudo apt install python3-pip
-git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
-cd unitree_sdk2_python
-pip3 install -e .
-```
-If you encounter an error during installation:
-```bash
-Could not locate cyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH
-```
-Refer to: https://github.com/unitreerobotics/unitree_sdk2_python
-#### mujoco-python
-```bash
-pip3 install mujoco
-```
-
-#### joystick
-```bash
-pip3 install pygame
-```
-
-### 2. Test
-```bash
-cd ./simulate_python
-python3 ./unitree_mujoco.py
-```
-You should see the mujoco simulator with the Go2 robot loaded.
-In a new terminal, run:
-```bash
-python3 ./test/test_unitree_sdk2.py
-```
-The program will output the robot's pose and position information in the simulator, and each motor of the robot will continuously output 1Nm of torque.
-
-**Note:** The testing program sends the unitree_go message. If you want to test G1 robot, you need to modify the program to use the unitree_hg message.
 
 
 # Usage

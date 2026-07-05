@@ -4,6 +4,8 @@ This is a simulator developed based on `Unitree SDK2` and `Mujoco`. This is **FO
 
 This simulator is intended to be used with the [Go2-Control Wrapper](https://github.com/7Swaize/go2-control.git). **ALL** dependency information, installations, and API Documentation are listed there.
 
+Joystick functionality is technically preserved.
+
 ## Directory Structure
 - `iceoryx_interfaces/`: Shared Iceoryx2 client-server configurations needed for IPC
 - `simulate/resources/`: Resources used to load the robot model and scene

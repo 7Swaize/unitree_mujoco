@@ -30,7 +30,7 @@ Note:
 
 # Configuration
 ## C++ Simulator
-The configuration file for the C++ simulator is located at `/simulate/resources/config/`:
+The configuration file for the C++ simulator is located at `simulate/resources/config/`:
 
 - 'camera.yaml': Configuration file for Go2 simulator camera
 - 'global.yaml': Configuration file for the C++ simulation

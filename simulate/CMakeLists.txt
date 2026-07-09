@@ -19,7 +19,7 @@ find_package(iceoryx_interfaces REQUIRED CONFIG)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 
-set(GENERATOR ${CMAKE_SOURCE_DIR}/resources/lidar/generate_scan_pattern_compile_time.py)
+set(GENERATOR ${CMAKE_SOURCE_DIR}/resources/lidar/generate_scan_pattern_build_time.py)
 set(GENERATOR_DATA ${CMAKE_SOURCE_DIR}/resources/lidar/mid360.csv)
 set(GENERATED_SCAN_PATTERN_HPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.hpp)
 set(GENERATED_SCAN_PATTERN_CPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.cpp)

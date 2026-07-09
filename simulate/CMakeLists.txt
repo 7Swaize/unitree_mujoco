@@ -16,6 +16,26 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
 find_package(unitree_sdk2 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(iceoryx_interfaces REQUIRED CONFIG)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+
+set(GENERATOR ${CMAKE_SOURCE_DIR}/resources/lidar/generate_scan_pattern_compile_time.py)
+set(GENERATOR_DATA ${CMAKE_SOURCE_DIR}/resources/lidar/mid360.csv)
+set(GENERATED_SCAN_PATTERN_HPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.hpp)
+set(GENERATED_SCAN_PATTERN_CPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.cpp)
+
+add_custom_command(
+  OUTPUT ${GENERATED_SCAN_PATTERN_HPP} ${GENERATED_SCAN_PATTERN_CPP}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data
+  COMMAND ${Python3_EXECUTABLE} ${GENERATOR}
+  DEPENDS
+    ${GENERATOR}
+    ${GENERATOR_DATA}
+  COMMENT "Generating Mid360 scan pattern sources"
+  VERBATIM
+)
+
+add_custom_target(generate_scan_pattern DEPENDS ${GENERATED_SCAN_PATTERN_HPP} ${GENERATED_SCAN_PATTERN_CPP})
 
 
 file(GLOB SIM_SRC
@@ -33,6 +53,7 @@ file(GLOB SIM_SRC
 )
 
 add_executable(go2sim_cpp ${SIM_SRC} src/cpp/main.cc)
+add_dependencies(go2sim_cpp generate_scan_pattern)
 
 # Checks from: https://github.com/ipc-sim/IPC/tree/main/cmake/find
 check_cxx_source_runs("
@@ -144,11 +165,9 @@ endif()
 
 
 target_include_directories(go2sim_cpp PRIVATE
-  mujoco/include
-  mujoco/simulate
-  src/cpp/lodepng
-  src/cpp/sensors
-  src/cpp
+  ${CMAKE_SOURCE_DIR}/src/cpp
+  ${CMAKE_SOURCE_DIR}/mujoco/include
+  ${CMAKE_SOURCE_DIR}/mujoco/simulate
 )
 
 target_link_directories(go2sim_cpp PRIVATE mujoco/lib)

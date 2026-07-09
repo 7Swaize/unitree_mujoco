@@ -1,5 +1,4 @@
-import os 
-import sys
+import argparse
 import csv
 import textwrap
 
@@ -8,9 +7,6 @@ from pathlib import Path
 
 
 GENERATED_FILE_NAME = "generated_scan_pattern"
-CSV_PATH = Path(Path(__file__).resolve().parent / "mid360.csv").resolve()
-OUT_HPP_PATH = Path(Path(__file__).resolve().parent.parent.parent / "src" / "cpp" / "sensors" / "data" / f"{GENERATED_FILE_NAME}.hpp").resolve()
-OUT_CPP_PATH = Path(Path(__file__).resolve().parent.parent.parent / "src" / "cpp" / "sensors" / "data" / f"{GENERATED_FILE_NAME}.cpp").resolve()
 
 
 class FileWriter:
@@ -39,20 +35,27 @@ class FileWriter:
         self._indent = max(0, self._indent - 1)
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--csv", dest="csv_path", required=True)
+    parser.add_argument("--output-hpp", dest="output_hpp_path", required=True)
+    parser.add_argument("--output-cpp", dest="output_cpp_path", required=True)
+    return parser.parse_args()
 
-def generate():
+
+def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> None:
     data = []
 
-    with open(CSV_PATH, "r") as f:
+    with csv_path.open("r", newline="") as f:
         reader = csv.reader(f)
-        next(reader, None) # Skip headers
+        next(reader, None)  # Skip headers
 
         for row in reader:
             if not row:
                 continue
             data.extend([float(val) for val in row])
 
-    with open(OUT_HPP_PATH, "w") as hpp:
+    with output_hpp_path.open("w") as hpp:
         writer = FileWriter(hpp)
         writer.writeln("#pragma once")
         writer.writeln("#include <array>")
@@ -61,16 +64,15 @@ def generate():
 
         writer.writeln("namespace lidar_data {")
         writer.push_indent()
-        
+
         writer.writeln(f"inline constexpr std::size_t TotalElements = {len(data)};")
         writer.writeln(f"inline constexpr std::size_t TotalRows = {len(data) // 3};")
         writer.writeln(f"alignas(64) extern const std::array<float, {len(data)}> Mid360ScanPatternData;")
-        
+
         writer.pop_indent()
         writer.writeln("}")
 
-
-    with open(OUT_CPP_PATH, "w") as cpp:
+    with output_cpp_path.open("w") as cpp:
         writer = FileWriter(cpp)
         writer.writeln(f'#include "{GENERATED_FILE_NAME}.hpp"')
         writer.writeln()
@@ -80,7 +82,7 @@ def generate():
 
         writer.writeln(f"alignas(64) extern const std::array<float, {len(data)}> Mid360ScanPatternData = {{")
         writer.push_indent()
-        
+
         chunk_size = 12
         for i in range(0, len(data), chunk_size):
             chunk = data[i:i+chunk_size]
@@ -91,7 +93,8 @@ def generate():
         writer.writeln("}")
         writer.pop_indent()
         writer.writeln("}")
-        
+
 
 if __name__ == "__main__":
-    generate()
+    args = parse_args()
+    generate(Path(args.csv_path).resolve(), Path(args.output_hpp_path).resolve(), Path(args.output_cpp_path).resolve())

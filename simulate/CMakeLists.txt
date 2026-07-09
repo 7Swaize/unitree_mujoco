@@ -19,15 +19,20 @@ find_package(iceoryx_interfaces REQUIRED CONFIG)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 
-set(GENERATOR ${CMAKE_SOURCE_DIR}/resources/lidar/generate_scan_pattern_build_time.py)
-set(GENERATOR_DATA ${CMAKE_SOURCE_DIR}/resources/lidar/mid360.csv)
-set(GENERATED_SCAN_PATTERN_HPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.hpp)
-set(GENERATED_SCAN_PATTERN_CPP ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data/generated_scan_pattern.cpp)
+set(LIDAR_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/lidar)
+set(SCAN_PATTERN_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp/sensors/data)
+set(GENERATOR ${LIDAR_RESOURCE_DIR}/generate_scan_pattern_build_time.py)
+set(GENERATOR_DATA ${LIDAR_RESOURCE_DIR}/mid360.csv)
+set(GENERATED_SCAN_PATTERN_HPP ${SCAN_PATTERN_OUTPUT_DIR}/generated_scan_pattern.hpp)
+set(GENERATED_SCAN_PATTERN_CPP ${SCAN_PATTERN_OUTPUT_DIR}/generated_scan_pattern.cpp)
 
 add_custom_command(
   OUTPUT ${GENERATED_SCAN_PATTERN_HPP} ${GENERATED_SCAN_PATTERN_CPP}
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/src/cpp/sensors/data
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${SCAN_PATTERN_OUTPUT_DIR}
   COMMAND ${Python3_EXECUTABLE} ${GENERATOR}
+    --csv ${GENERATOR_DATA}
+    --output-hpp ${GENERATED_SCAN_PATTERN_HPP}
+    --output-cpp ${GENERATED_SCAN_PATTERN_CPP}
   DEPENDS
     ${GENERATOR}
     ${GENERATOR_DATA}

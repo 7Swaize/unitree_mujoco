@@ -25,9 +25,7 @@ public:
 
     explicit LidarConfig(const mjModel* model) : model_(model) { }
 
-#ifndef __INTELLISENSE__
     void load(const std::filesystem::path& path);
-#endif
 
 private:
     const mjModel* model_;

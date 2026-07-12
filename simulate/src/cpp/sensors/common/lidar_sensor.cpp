@@ -50,8 +50,6 @@ void LidarSensor::scan(const mjModel* m, mjData* d, double dt) {
     }
 }
 
-
-#ifndef __INTELLISENSE__
 void LidarConfig::load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
 
@@ -66,4 +64,3 @@ void LidarConfig::load(const std::filesystem::path& path) {
     const char* exclude_body = cfg["exclude_body"].as<const char*>();
     exclude_body_id = mj_name2id(model_, mjOBJ_BODY, exclude_body);
 }
-#endif

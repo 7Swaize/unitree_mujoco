@@ -3,18 +3,13 @@
 using namespace iox2;
 using namespace iceoryx_interfaces::camera;
 
-// CameraConfig
-
-void CameraConfig::load(const std::filesystem::path& path) {
+void CameraConfig::Load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
-    
-    far_clip = utils::yaml_require_field<float>(cfg, "far_clip");
-    near_clip = utils::yaml_require_field<float>(cfg, "near_clip");
-    publish_fps = utils::yaml_require_field<int>(cfg, "publish_fps");
+
+    far_clip = utils::YamlRequireField<float>(cfg, "far_clip");
+    near_clip = utils::YamlRequireField<float>(cfg, "near_clip");
+    publish_fps = utils::YamlRequireField<int>(cfg, "publish_fps");
 }
-
-
-// CameraPublisher
 
 CameraPublisher::CameraPublisher(mjModel* model,
                                  mjData* data,
@@ -23,26 +18,29 @@ CameraPublisher::CameraPublisher(mjModel* model,
                                  mujoco::Simulate* sim,
                                  mujoco::SimulateMutex& sim_mutex)
     : model_(model),
-      data_(data), 
-      cfg_(cam_cfg), 
+      data_(data),
+      cfg_(cam_cfg),
       sim_(sim),
       sim_mutex_(sim_mutex),
-      iox2_node_(NodeBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<ServiceType::Ipc>().value()),
+      iox2_node_(NodeBuilder()
+                    .signal_handling_mode(SignalHandlingMode::Disabled)
+                    .create<ServiceType::Ipc>()
+                    .value()),
       camera_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCamera).value())
-                         .publish_subscribe<FrameData_>()
-                         .max_publishers(kMaxPublishers)
-                         .max_subscribers(kMaxSubscribers)
-                         .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
-                         .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
-                         .history_size(kHistorySize)
-                         .open_or_create()
-                         .value()),
+                          .publish_subscribe<FrameData_>()
+                          .max_publishers(kMaxPublishers)
+                          .max_subscribers(kMaxSubscribers)
+                          .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
+                          .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
+                          .history_size(kHistorySize)
+                          .open_or_create()
+                          .value()),
       camera_pub_(camera_service_.publisher_builder().create().value())
-{   
-    // https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
+{
+    // Reference: https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
- 
+
     offscreen_window_ = glfwCreateWindow(kFrameWidth, kFrameHeight, "go2_camera_offscreen", nullptr, share_window);
     glfwDefaultWindowHints();
 }
@@ -53,12 +51,11 @@ CameraPublisher::~CameraPublisher() {
     }
 }
 
-void CameraPublisher::run() {
-    CameraPublisher::GLFWRenderHandler{this}();
+void CameraPublisher::Run() {
+    GLFWRenderHandler{this}();
 }
 
-
-void CameraPublisher::publish_frames(unsigned char* rgb_data, uint16_t* depth_data) {
+void CameraPublisher::PublishFrames(unsigned char* rgb_data, uint16_t* depth_data) {
     auto sample = camera_pub_.loan_uninit().value();
     new (&sample.payload_mut()) FrameData_{};
 
@@ -74,33 +71,28 @@ void CameraPublisher::publish_frames(unsigned char* rgb_data, uint16_t* depth_da
     send(std::move(initialized)).value();
 }
 
+CameraPublisher::GLFWRenderHandler::GLFWRenderHandler(CameraPublisher* outer) : outer_(outer) {}
 
-
-// CameraPublisher::GLFWRenderHandler
-
-CameraPublisher::GLFWRenderHandler::GLFWRenderHandler(CameraPublisher* outer)
-    : outer_(outer) {}
- 
 void CameraPublisher::GLFWRenderHandler::operator()() {
     try {
-        renderLoop();
+        RenderLoop();
     } catch (const std::exception& e) {
         std::cerr << "[Simulator] Exception in render loop: " << e.what() << '\n';
     }
 }
 
-void CameraPublisher::GLFWRenderHandler::renderLoop() {
+void CameraPublisher::GLFWRenderHandler::RenderLoop() {
     // To my understanding two threads do not share the same rendering buffer (and current context in this situation).
     // Therefore, we only need to direct rendering to the off screen buffer ONCE. And only make the context current ONCE.
     glfwMakeContextCurrent(outer_->offscreen_window_);
- 
+
     mjvScene scn;
     mjrContext con;
     mjvCamera cam;
     mjvOption opt;
- 
+
     mjv_defaultScene(&scn);
-    mjv_makeScene(outer_->model_, &scn, mujoco::Simulate::kMaxGeom); // 100000 geom seems too eager?
+    mjv_makeScene(outer_->model_, &scn, mujoco::Simulate::kMaxGeom);
     mjv_defaultCamera(&cam);
     mjv_defaultOption(&opt);
     mjr_defaultContext(&con);
@@ -111,29 +103,29 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjvScene* s;
         mjrContext* c;
 
-        ~RenderCleanup() { 
-            mjv_freeScene(s); 
-            mjr_freeContext(c); 
-            glfwMakeContextCurrent(nullptr); 
+        ~RenderCleanup() {
+            mjv_freeScene(s);
+            mjr_freeContext(c);
+            glfwMakeContextCurrent(nullptr);
         }
     } cleanup{&scn, &con};
- 
+
     cam.type = mjCAMERA_FIXED;
     cam.fixedcamid = mj_name2id(outer_->model_, mjOBJ_CAMERA, "Internal Camera");
 
-    // TODO: This changes clipping for all cams. Find a way to only modify this cam. I put a note about this in the yaml.
+    // Note: This changes clipping for all cameras. Consider using per-camera clipping if available.
     outer_->model_->vis.map.znear = outer_->cfg_.near_clip;
     outer_->model_->vis.map.zfar = outer_->cfg_.far_clip;
- 
+
     mjrRect viewport = {0, 0, kFrameWidth, kFrameHeight};
-    
+
     std::vector<unsigned char> rgb_buf(kFrameBufferElementsRgb);
-    std::vector<float, aligned_allocator<float, SIMD_ALIGNMENT>> depth_buf(kFrameBufferElementsDepth);
-    std::vector<uint16_t, aligned_allocator<uint16_t, SIMD_ALIGNMENT>> depth_buf_ret(kFrameBufferElementsDepth);
+    std::vector<float, utils::AlignedAllocator<float, SIMD_ALIGNMENT>> depth_buf(kFrameBufferElementsDepth);
+    std::vector<uint16_t, utils::AlignedAllocator<uint16_t, SIMD_ALIGNMENT>> depth_buf_ret(kFrameBufferElementsDepth);
 
     {
-        assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));
-        assert(is_aligned(reinterpret_cast<std::size_t>(depth_buf_ret.data()), SIMD_ALIGNMENT));
+        assert(utils::IsAligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));
+        assert(utils::IsAligned(reinterpret_cast<std::size_t>(depth_buf_ret.data()), SIMD_ALIGNMENT));
     }
 
     auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);
@@ -148,7 +140,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
 
         next_time += std::chrono::duration_cast<std::chrono::steady_clock::duration>(frame_duration);
 
-        // shared data with main sim -> lock
+        // Shared data with main simulator - acquire lock
         {
             mujoco::MutexLock lock(outer_->sim_mutex_);
             mjv_updateScene(outer_->model_, outer_->data_, &opt, nullptr, &cam, mjCAT_ALL, &scn);
@@ -157,15 +149,16 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
         mjr_render(viewport, &scn, &con);
         mjr_readPixels(rgb_buf.data(), depth_buf.data(), viewport, &con);
 
-        depth_transform_hyperbolic_to_linear(depth_buf.data(), depth_buf_ret.data(), depth_buf.size());
-        outer_->publish_frames(rgb_buf.data(), depth_buf_ret.data());
+        DepthTransformHyperbolicToLinear(depth_buf.data(), depth_buf_ret.data(), depth_buf.size());
+        outer_->PublishFrames(rgb_buf.data(), depth_buf_ret.data());
     }
 }
 
-void CameraPublisher::GLFWRenderHandler::depth_transform_hyperbolic_to_linear(float* in, uint16_t* out, const size_t size) {
-    // see: https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
-    // see: https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer/6657284#6657284
-    // avx: https://stackoverflow.com/questions/66260651/mm256-fmadd-ps-is-slower-than-mm256-mul-ps-mm256-add-ps
+void CameraPublisher::GLFWRenderHandler::DepthTransformHyperbolicToLinear(float* in, uint16_t* out, const std::size_t size) {
+    // References:
+    // - https://github.com/openai/mujoco-py/issues/520#issuecomment-1254452252
+    // - https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer
+    // - SIMD optimization: https://stackoverflow.com/questions/66260651/mm256-fmadd-ps-is-slower
 
-    simd::transform(in, out, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip}, size);
+    simd::Transform(in, out, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip}, size);
 }

@@ -692,7 +692,7 @@ int main(int argc, char **argv)
   CameraConfig cam_cfg;
   auto yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
   if (std::filesystem::exists(yaml_dir)) {
-    cam_cfg.load(yaml_dir);
+    cam_cfg.Load(yaml_dir);
   } else {
     std::printf("camera configuration file not found, using defaults\n");
   }
@@ -738,7 +738,7 @@ int main(int argc, char **argv)
       m, d, main_window, cam_cfg, sim.get(), sim->mtx
     );
 
-    camera_pub->run();
+    camera_pub->Run();
   });
 
   // start simulation UI loop (blocking call)

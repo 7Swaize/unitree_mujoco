@@ -1,30 +1,38 @@
 #pragma once
-#include <cstddef>
 
+#include <cstddef>
+#include <new>
+#include <cstdlib>
+
+namespace utils {
 
 template <typename T, std::size_t Alignment>
-struct aligned_allocator {
+struct AlignedAllocator {
     using value_type = T;
 
-    aligned_allocator() noexcept = default;
+    AlignedAllocator() noexcept = default;
 
     template <class U>
-    constexpr aligned_allocator(const aligned_allocator<U, Alignment>&) noexcept {}
+    constexpr AlignedAllocator(const AlignedAllocator<U, Alignment>&) noexcept {}
 
     // https://stackoverflow.com/questions/66891368/template-parametric-type-allocator-in-c
     template <class U>
-    struct rebind { using other = aligned_allocator<U, Alignment>; };
+    struct rebind {
+        using other = AlignedAllocator<U, Alignment>;
+    };
 
     T* allocate(std::size_t n) {
         void* ptr = nullptr;
 #if defined(_MSC_VER)
         ptr = _aligned_malloc(n * sizeof(T), Alignment);
-        if (!ptr) throw std::bad_alloc();
-#else
-        if (posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0)
+        if (!ptr) {
             throw std::bad_alloc();
+        }
+#else
+        if (posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0) {
+            throw std::bad_alloc();
+        }
 #endif
-
         return reinterpret_cast<T*>(ptr);
     }
 
@@ -37,7 +45,8 @@ struct aligned_allocator {
     }
 };
 
-
-inline bool is_aligned(std::size_t value, std::size_t alignment) noexcept {
+inline bool IsAligned(const std::size_t value, const std::size_t alignment) noexcept {
     return (value & (alignment - 1)) == 0;
 }
+
+}  // namespace utils

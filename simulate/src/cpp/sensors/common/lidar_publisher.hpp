@@ -1,4 +1,5 @@
 #pragma once
+
 #include <mujoco/mujoco.h>
 #include "simulate.h"
 
@@ -6,6 +7,10 @@
 
 #include "sensors/common/lidar_sensor.hpp"
 
+/// Publisher for LiDAR point cloud data to external consumers
+///
+/// Manages the LiDAR sensor simulation and publishes point clouds at a configurable frequency.
+/// Runs in a separate thread and synchronizes access to simulator state.
 class LidarPublisher {
 public:
     LidarPublisher(mjModel* model,
@@ -13,14 +18,14 @@ public:
                    const LidarConfig& config,
                    mujoco::Simulate* sim,
                    mujoco::SimulateMutex& sim_mutex)
-    : model_(model),
-      data_(data),
-      config_(config),
-      sim_(sim),
-      sim_mutex_(sim_mutex),
-      sensor_{LidarSensor{config}} { } 
+        : model_(model),
+          data_(data),
+          config_(config),
+          sim_(sim),
+          sim_mutex_(sim_mutex),
+          sensor_(LidarSensor{config}) { }
 
-    void run();
+    void Run();
 
 private:
     const mjModel* model_;
@@ -31,6 +36,6 @@ private:
     const LidarConfig config_;
     LidarSensor sensor_;
 
-    void loop_internal();
-    void publish_cloud(double stamp_sec);
+    void LoopInternal();
+    void PublishCloud(double stamp_sec);
 };

@@ -1,0 +1,8 @@
+min_range: 0.10
+max_range: 40.0
+
+publish_hz: 10
+points_per_second: 200_000
+
+site_name: ""
+exclude_body: ""

@@ -1,5 +1,6 @@
-import argparse
 import csv
+import math
+import argparse
 import textwrap
 
 from typing import TextIO
@@ -43,8 +44,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def spherical_to_xyz(azimuth: float, zenith: float) -> tuple[float, float, float]:
+    az = math.radians(azimuth)
+    ze = math.radians(zenith)
+    x = math.sin(ze) * math.cos(az)
+    y = math.sin(ze) * math.sin(az)
+    z = math.cos(ze)
+    return x, y, z
+
+
 def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> None:
-    data = []
+    directions: list[float] = []
 
     with csv_path.open("r", newline="") as f:
         reader = csv.reader(f)
@@ -53,21 +63,30 @@ def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> No
         for row in reader:
             if not row:
                 continue
-            data.extend([float(val) for val in row])
+            az, ze, = float(row[0]), float(row[1])
+            directions.extend(spherical_to_xyz(az, ze))
+
+    elements = len(directions)
+    vecs = len(directions) // 3
 
     with output_hpp_path.open("w") as hpp:
         writer = FileWriter(hpp)
         writer.writeln("#pragma once")
         writer.writeln("#include <array>")
         writer.writeln("#include <cstddef>")
+        writer.writeln("#include <Eigen/Core>")
+        writer.writeln()
+        writer.writeln("#include <mujoco/mujoco.h>")
         writer.writeln()
 
         writer.writeln("namespace lidar_data {")
         writer.push_indent()
 
-        writer.writeln(f"inline constexpr std::size_t TotalElements = {len(data)};")
-        writer.writeln(f"inline constexpr std::size_t TotalRows = {len(data) // 3};")
-        writer.writeln(f"alignas(64) extern const std::array<float, {len(data)}> Mid360ScanPatternData;")
+        writer.writeln(f"inline constexpr std::size_t TotalElements = {elements};")
+        writer.writeln(f"inline constexpr std::size_t TotalVecs = {vecs};")
+        writer.writeln()
+        writer.writeln(f"alignas(64) extern const std::array<mjtNum, {elements}> Mid360ScanPatternData;")
+        writer.writeln(f"inline Eigen::Map<const Eigen::Matrix<mjtNum, 3, {vecs}>> ScanPatternDirectionsMap();")
 
         writer.pop_indent()
         writer.writeln("}")
@@ -80,12 +99,19 @@ def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> No
         writer.writeln("namespace lidar_data {")
         writer.push_indent()
 
-        writer.writeln(f"alignas(64) extern const std::array<float, {len(data)}> Mid360ScanPatternData = {{")
+        writer.writeln(f"inline Eigen::Map<const Eigen::Matrix<mjtNum, 3, {vecs}>> ScanPatternDirectionsMap() {{")
+        writer.push_indent()
+        writer.writeln(f"return Eigen::Map<const Eigen::Matrix<mjtNum, 3, {vecs}>>(Mid360ScanPatternData.data());")
+        writer.pop_indent()
+        writer.writeln("}")
+        writer.writeln()
+
+        writer.writeln(f"alignas(64) extern const std::array<mjtNum, {len(directions)}> Mid360ScanPatternData = {{")
         writer.push_indent()
 
         chunk_size = 12
-        for i in range(0, len(data), chunk_size):
-            chunk = data[i:i+chunk_size]
+        for i in range(0, len(directions), chunk_size):
+            chunk = directions[i:i+chunk_size]
             line_str = ", ".join(f"{x}f" for x in chunk)
             writer.writeln(f"{line_str},")
 

@@ -13,10 +13,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
 
-find_package(unitree_sdk2 REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options)
-find_package(iceoryx_interfaces REQUIRED CONFIG)
+find_package(Eigen3 REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(unitree_sdk2 REQUIRED)
+find_package(iceoryx_interfaces REQUIRED CONFIG)
 
 
 set(LIDAR_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/lidar)
@@ -182,8 +183,9 @@ target_link_libraries(go2sim_cpp PRIVATE
   mujoco
   glfw
   yaml-cpp
-  unitree_sdk2
+  Eigen3::Eigen
   Boost::program_options
+  unitree_sdk2
   fmt
   iceoryx_interfaces::iceoryx_interfaces
 )

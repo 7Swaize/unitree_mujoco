@@ -20,11 +20,12 @@ CameraPublisher::CameraPublisher(mjModel* model,
                                  mjData* data,
                                  GLFWwindow* share_window,
                                  const CameraConfig& cam_cfg,
-                                 const DDSPublisherConfig& dds_cfg,
+                                 mujoco::Simulate* sim,
                                  mujoco::SimulateMutex& sim_mutex)
     : model_(model),
       data_(data), 
       cfg_(cam_cfg), 
+      sim_(sim),
       sim_mutex_(sim_mutex),
       iox2_node_(NodeBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<ServiceType::Ipc>().value()),
       camera_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCamera).value())
@@ -47,27 +48,15 @@ CameraPublisher::CameraPublisher(mjModel* model,
 }
 
 CameraPublisher::~CameraPublisher() {
-    stop();
-
     if (offscreen_window_) {
         glfwDestroyWindow(offscreen_window_);
     }
 }
 
-void CameraPublisher::start() {
-    if (!offscreen_window_ || running_) return;
-  
-    running_ = true;
-    thread_ = std::thread(GLFWRenderHandler{this});
+void CameraPublisher::run() {
+    CameraPublisher::GLFWRenderHandler{this}();
 }
- 
-void CameraPublisher::stop() {
-    running_ = false;
- 
-    if (thread_.joinable()) {
-        thread_.join();
-    }
-}
+
 
 void CameraPublisher::publish_frames(unsigned char* rgb_data, uint16_t* depth_data) {
     auto sample = camera_pub_.loan_uninit().value();
@@ -152,7 +141,7 @@ void CameraPublisher::GLFWRenderHandler::renderLoop() {
     auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);
     auto next_time = std::chrono::steady_clock::now();
 
-    while (outer_->running_) {
+    while (!outer_->sim_->exitrequest.load(std::memory_order_acquire)) {
         auto now = std::chrono::steady_clock::now();
         if (now < next_time) {
             std::this_thread::sleep_until(next_time);

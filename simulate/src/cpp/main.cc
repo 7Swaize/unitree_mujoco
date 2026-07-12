@@ -101,6 +101,7 @@ namespace
   // model and data
   mjModel *m = nullptr;
   mjData *d = nullptr;
+  std::atomic<bool> sim_data_ready{false};
 
   // control noise variables
   mjtNum *ctrlnoise = nullptr;
@@ -571,7 +572,10 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
     {
       sim->LoadMessageClear();
     }
+
+    sim_data_ready.store(true, std::memory_order_release);
   }
+  
 
   PhysicsLoop(*sim);
 
@@ -715,7 +719,7 @@ int main(int argc, char **argv)
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
   unitree_thread.detach();
-  std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
+  std::thread physics_thread_handle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
  
   // wire callbacks
   glfwSetKeyCallback(main_window,user_key_cb);
@@ -724,25 +728,23 @@ int main(int argc, char **argv)
   iox2::set_log_level_from_env_or(iox2::LogLevel::Error);
 
   // start camera publisher after physics sim
-  std::thread cam_wait([&]()
+  std::thread cam_thread_handle([&]()
   {
-    while (!m || !d) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (!sim_data_ready.load(std::memory_order_acquire)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
     camera_pub = std::make_unique<CameraPublisher>(
-      m, d, main_window, cam_cfg,
-      DDSPublisherConfig{param::config.domain_id, param::config.interface},
-      sim->mtx
+      m, d, main_window, cam_cfg, sim.get(), sim->mtx
     );
 
-    camera_pub->start();
+    camera_pub->run();
   });
 
-  cam_wait.detach();
-
- // start simulation UI loop (blocking call)
+  // start simulation UI loop (blocking call)
   sim->RenderLoop();
-  physicsthreadhandle.join();
-
-  if (camera_pub) camera_pub->stop();
+  physics_thread_handle.join();
+  cam_thread_handle.join();
 
   std::exit(0);
 }

@@ -23,12 +23,6 @@
 
 namespace ioxifaces = iceoryx_interfaces::camera;
 
-struct DDSPublisherConfig {
-    const int domain_id;
-    const std::string interface;
-};
-
-
 struct CameraConfig {
     int res_x = 620;
     int res_y = 480;
@@ -47,7 +41,7 @@ public:
                     mjData* data, 
                     GLFWwindow* share_window,
                     const CameraConfig& cam_cfg,
-                    const DDSPublisherConfig& dds_cfg,
+                    mujoco::Simulate* sim,
                     mujoco::SimulateMutex& sim_mutex);
  
     ~CameraPublisher();
@@ -55,19 +49,17 @@ public:
     CameraPublisher(const CameraPublisher&) = delete;
     CameraPublisher& operator =(const CameraPublisher&) = delete;
  
-    void start();
-    void stop();
+    void run();
  
 private:
     mjModel* model_;
     mjData* data_;
-    CameraConfig cfg_;
+    const CameraConfig cfg_;
     GLFWwindow* offscreen_window_ = nullptr;
+
+    mujoco::Simulate* sim_;
     mujoco::SimulateMutex& sim_mutex_;
-    
-    std::atomic<bool> running_{false};
-    std::thread thread_;
- 
+     
     iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
     iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_service_;
     iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_pub_;

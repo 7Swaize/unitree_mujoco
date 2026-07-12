@@ -5,7 +5,7 @@ namespace {
     using Matrix3Xm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
 }
 
-void LidarSensor::Scan(const mjModel* m, mjData* d, double dt) {
+void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     if (dt <= 0) return; 
 
     std::size_t n_rays = static_cast<std::size_t>(std::round(config_.points_per_second * dt));

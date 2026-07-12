@@ -47,7 +47,7 @@ public:
         accumulated_.resize(lidar_data::kTotalVecs);
     }
 
-    void Scan(const mjModel* m, mjData* data, double dt);
+    void Scan(const mjModel* m, mjData* data, const double dt);
 
     const std::vector<LidarPoint>& LatestPoints() const noexcept { 
         return latest_points_; 

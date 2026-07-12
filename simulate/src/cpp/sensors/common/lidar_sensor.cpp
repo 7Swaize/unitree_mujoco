@@ -53,14 +53,14 @@ void LidarSensor::scan(const mjModel* m, mjData* d, double dt) {
 void LidarConfig::load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
 
-    min_range = cfg["min_range"].as<float>(min_range);
-    max_range = cfg["max_range"].as<float>(max_range);
-    publish_hz = cfg["publish_hz"].as<int>(publish_hz);
-    points_per_second = cfg["points_per_second"].as<int>(points_per_second);
+    min_range = utils::yaml_require_field<float>(cfg, "min_range");
+    max_range = utils::yaml_require_field<float>(cfg, "max_range");
+    publish_hz = utils::yaml_require_field<int>(cfg, "publish_hz");
+    points_per_second = utils::yaml_require_field<int>(cfg, "points_per_second");
 
-    const char* site_name = cfg["site_name"].as<const char*>();
+    const char* site_name = utils::yaml_require_field<const char*>(cfg, "site_name");
     site_id = mj_name2id(model_, mjOBJ_BODY, site_name);
 
-    const char* exclude_body = cfg["exclude_body"].as<const char*>();
+    const char* exclude_body = utils::yaml_require_field<const char*>(cfg, "exclude_body");
     exclude_body_id = mj_name2id(model_, mjOBJ_BODY, exclude_body);
 }

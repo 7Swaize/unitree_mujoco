@@ -12,8 +12,8 @@
 #include <thread>
 #include <vector>
 #include <stdexcept>
-#include <yaml-cpp/yaml.h>
 
+#include "utils/yaml_utils.hpp"
 #include "utils/simd.hpp"
 #include "utils/aligned_allocator.hpp"
 
@@ -29,7 +29,7 @@ struct CameraConfig {
     int crop_left = 8;
     float far_clip = 2.0f;
     float near_clip = 0.175f;
-    double publish_fps = 0.1;
+    int publish_fps = 60;
  
     void load(const std::filesystem::path &path);
 };

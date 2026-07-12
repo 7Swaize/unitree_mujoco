@@ -5,9 +5,9 @@
 #include <filesystem>
 #include <vector>
 #include <Eigen/Core>
-#include <yaml-cpp/yaml.h>
 
 #include "utils/container_utils.hpp"
+#include "utils/yaml_utils.hpp"
 #include "utils/simd.hpp"
 #include "sensors/data/generated_scan_pattern.hpp"
 

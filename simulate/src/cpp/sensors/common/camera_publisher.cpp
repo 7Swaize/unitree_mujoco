@@ -8,9 +8,9 @@ using namespace iceoryx_interfaces::camera;
 void CameraConfig::load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
     
-    far_clip = cfg["far_clip"].as<float>(far_clip);
-    near_clip = cfg["near_clip"].as<float>(near_clip);
-    publish_fps = cfg["publish_fps"].as<double>(publish_fps);
+    far_clip = utils::yaml_require_field<float>(cfg, "far_clip");
+    near_clip = utils::yaml_require_field<float>(cfg, "near_clip");
+    publish_fps = utils::yaml_require_field<int>(cfg, "publish_fps");
 }
 
 
@@ -70,10 +70,8 @@ void CameraPublisher::publish_frames(unsigned char* rgb_data, uint16_t* depth_da
     std::memcpy(payload.rgb_data, reinterpret_cast<uint8_t*>(rgb_data), kFrameBufferElementsRgb * sizeof(uint8_t));
     std::memcpy(payload.depth_data, depth_data, kFrameBufferElementsDepth * sizeof(uint16_t));
 
-#ifndef __INTELLISENSE__
     auto initialized = assume_init(std::move(sample));
     send(std::move(initialized)).value();
-#endif
 }
 
 

@@ -7,10 +7,7 @@
 
 #include "sensors/common/lidar_sensor.hpp"
 
-/// Publisher for LiDAR point cloud data to external consumers
-///
-/// Manages the LiDAR sensor simulation and publishes point clouds at a configurable frequency.
-/// Runs in a separate thread and synchronizes access to simulator state.
+
 class LidarPublisher {
 public:
     LidarPublisher(mjModel* model,

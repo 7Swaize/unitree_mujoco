@@ -10,7 +10,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, double dt) {
 
     std::size_t n_rays = static_cast<std::size_t>(std::round(config_.points_per_second * dt));
     if (n_rays == 0) n_rays = 1;
-    if (n_rays > lidar_data::TotalVecs) n_rays = lidar_data::TotalVecs;
+    if (n_rays > lidar_data::kTotalVecs) n_rays = lidar_data::kTotalVecs;
 
     Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R(d->site_xmat + 9 * config_.site_id);
     Eigen::Map<const Vec3m> origin(d->site_xpos + 3 * config_.site_id);
@@ -26,7 +26,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, double dt) {
                 ray_geomid_.data(), ray_dist_.data(), n_rays, config_.max_range);
 
     for (std::size_t i = 0; i < n_rays; ++i) {
-        const std::size_t idx = (pattern_cursor_ + i) % lidar_data::TotalVecs;
+        const std::size_t idx = (pattern_cursor_ + i) % lidar_data::kTotalVecs;
         const mjtNum dist = ray_dist_[i];
 
         const bool hit = (dist >= 0.0) && (dist >= config_.min_range);
@@ -48,7 +48,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, double dt) {
         accumulated_[idx] = p;
     }
 
-    pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::TotalVecs;
+    pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::kTotalVecs;
 }
 
 void LidarConfig::Load(const std::filesystem::path& path) {

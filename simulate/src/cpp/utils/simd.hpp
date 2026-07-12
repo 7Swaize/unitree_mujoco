@@ -116,25 +116,24 @@ namespace operations {
 // Converts a normalized depth buffer [0, 1], as specified via OpenGL docs, into a human readable linear distance map 
 struct ToLinDistMap {
 #if !defined(SIMD_SCALAR)
-    VecF32 kZFarV;
-    VecF32 kZFnProdV;
-    VecF32 kZFnSubV;
+    const VecF32 kZFarV;
+    const VecF32 kZFnProdV;
+    const VecF32 kZFnSubV;
 #endif
-    
-    float kZFarF;
-    float kZFnProdF;
-    float kZFnSubF;
+    const float kZFarF;
+    const float kZFnProdF;
+    const float kZFnSubF;
 
     static constexpr float kMmToMConv = 1000.0f; // conversion factor from millimeters to meters
     
-    ToLinDistMap(float z_near, float z_far);
+    ToLinDistMap(const float z_near, const float z_far);
 
-    inline uint16_t scalar(const float d) const noexcept {
+    [[nodiscard]] inline uint16_t scalar(const float d) const noexcept {
         return static_cast<uint16_t>((kZFnProdF / (kZFarF - d * kZFnSubF)) * kMmToMConv);
     }
 
 #if !defined(SIMD_SCALAR)
-    VecUI16 apply(VecF32 d) const noexcept;
+    [[nodiscard]] VecUI16 apply(VecF32 d) const noexcept;
 #endif
 };
 

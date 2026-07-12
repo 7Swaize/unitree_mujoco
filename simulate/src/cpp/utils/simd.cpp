@@ -3,7 +3,7 @@
 namespace simd {
 namespace operations {
 
-ToLinDistMap::ToLinDistMap(float z_near, float z_far)
+ToLinDistMap::ToLinDistMap(const float z_near, const float z_far)
 #if !defined(SIMD_SCALAR)
     : kZFarV(BroadcastF32(z_far)),
       kZFnProdV(BroadcastF32(z_far * z_near)),

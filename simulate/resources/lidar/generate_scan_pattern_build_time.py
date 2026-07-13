@@ -50,7 +50,8 @@ def spherical_to_xyz(azimuth: float, zenith: float) -> tuple[float, float, float
     x = math.sin(ze) * math.cos(az)
     y = math.sin(ze) * math.sin(az)
     z = math.cos(ze)
-    return x, y, z
+    magnitude = math.sqrt(x**2 + y**2 + z**2)
+    return x / magnitude, y / magnitude, z / magnitude
 
 
 def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> None:

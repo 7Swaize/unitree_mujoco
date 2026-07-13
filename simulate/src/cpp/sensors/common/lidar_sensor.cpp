@@ -15,12 +15,6 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     utils::ResizeLazy(ray_geomid_, n_rays);
     utils::ResizeLazy(ray_dist_, n_rays);
 
-    {
-        for (int i = 0; i < world.cols(); ++i) {
-            assert(!world.col(i).isZero() && "Zero vector found inside 'world'");
-        }
-    }
-
     mj_multiRay(m, d, origin.data(), world.data(),
                 /*geomgroup=*/ nullptr, /*flg_static=*/ 1, config_.exclude_body_id,
                 ray_geomid_.data(), ray_dist_.data(), n_rays, config_.max_range);

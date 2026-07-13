@@ -4,7 +4,9 @@
 #include "simulate.h"
 
 #include <filesystem>
+#include <bitset>
 #include <vector>
+#include <span>
 #include <Eigen/Core>
 
 #include "utils/container_utils.hpp"
@@ -31,44 +33,47 @@ private:
     const mjModel* model_;
 };
 
-struct LidarPoint {
-    float x = 0.0f, y = 0.0f, z = 0.0f;
-    float distance = 0.0f;
-    int geom_id = -1;
-    bool valid = false;
-};
 
 class LidarSensor {
 public:
-    explicit LidarSensor(const LidarConfig& config) : config_(config) {
-        accumulated_.resize(lidar_data::kTotalVecs);
-    }
-
-    void Scan(const mjModel* m, mjData* data, const double dt);
-
-    const std::vector<LidarPoint>& LatestPoints() const noexcept { 
-        return latest_points_; 
-    }
-
-    const std::vector<LidarPoint>& AccumulatedCloud() const noexcept { 
-        return accumulated_; 
-    }
-
-private:
     using Vec3m = Eigen::Vector<mjtNum, 3>;
-    using Matrix3Xm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
+    using Matrix3xXm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
     using Matrix3x3RMm = Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>;
 
+    struct LidarScanView {
+        Eigen::Block<const Matrix3xXm, 3, Eigen::Dynamic, true> points;
+        const std::bitset<lidar_data::kTotalVecs>& valid;
+        const std::size_t n_rays;
+    };
+
+    explicit LidarSensor(const LidarConfig& config)
+        : config_(config),
+          points_world_(3, lidar_data::kTotalVecs)
+    { }
+
+    FORCE_INLINE LidarScanView LatestScan() const noexcept {
+        return LidarScanView {
+            points_world_.leftCols(n_rays_),
+            valid_,
+            n_rays_
+        };
+    }
+    
+    void Scan(const mjModel* m, mjData* data, const double dt);
+
+private:
+    static constexpr float kResizeLazyMultiplier = 1.5f;
     const LidarConfig config_;
+
     std::size_t pattern_cursor_ = 0;
+    std::size_t n_rays_ = 0;
+    std::vector<int> ray_geomid_stratch_;
+    std::vector<mjtNum> ray_dist_scratch_;
 
-    std::vector<LidarPoint> accumulated_;
-    std::vector<LidarPoint> latest_points_;
+    Matrix3xXm points_world_; 
+    std::bitset<lidar_data::kTotalVecs> valid_;
 
-    std::vector<int> ray_geomid_;
-    std::vector<mjtNum> ray_dist_;
-
-    Matrix3Xm TransformLocalToWorldSpace(
+    Matrix3xXm TransformLocalToWorldSpace(
         const Eigen::Map<const Matrix3x3RMm> R,
         const std::size_t start,
         const std::size_t n_rays)

@@ -36,5 +36,5 @@ void LidarPublisher::LoopInternal() {
 }
 
 void LidarPublisher::PublishCloud(double stamp_sec) {
-    const auto& points = sensor_.LatestPoints();
+    const auto& points = sensor_.LatestScan();
 }

@@ -10,42 +10,33 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
 
     Eigen::Map<const Matrix3x3RMm> R(d->site_xmat + 9 * config_.site_id);
     Eigen::Map<const Vec3m> origin(d->site_xpos + 3 * config_.site_id);
-    Matrix3Xm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
+    Matrix3xXm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
 
-    utils::ResizeLazy(ray_geomid_, n_rays);
-    utils::ResizeLazy(ray_dist_, n_rays);
+    utils::ResizeLazy(ray_geomid_stratch_, n_rays * kResizeLazyMultiplier);
+    utils::ResizeLazy(ray_dist_scratch_, n_rays * kResizeLazyMultiplier);
 
     mj_multiRay(m, d, origin.data(), world.data(),
                 /*geomgroup=*/ nullptr, /*flg_static=*/ 1, config_.exclude_body_id,
-                ray_geomid_.data(), ray_dist_.data(), n_rays, config_.max_range);
+                ray_geomid_stratch_.data(), ray_dist_scratch_.data(), n_rays, config_.max_range);
+
+    valid_.reset();
 
     for (std::size_t i = 0; i < n_rays; ++i) {
-        const std::size_t idx = (pattern_cursor_ + i) % lidar_data::kTotalVecs;
-        const mjtNum dist = ray_dist_[i];
+        const mjtNum dist = ray_dist_scratch_[i];
 
         const bool hit = (dist >= 0.0) && (dist >= config_.min_range);
         if (!hit) {
-            accumulated_[idx].valid = false;
             continue;
         }
 
-        auto dir = world.col(i);
-
-        LidarPoint p;
-        p.x = static_cast<float>(origin[0] + dist * dir[0]);
-        p.y = static_cast<float>(origin[1] + dist * dir[1]);
-        p.z = static_cast<float>(origin[2] + dist * dir[2]);
-        p.distance = static_cast<float>(dist);
-        p.geom_id = ray_geomid_[i];
-        p.valid = true;
-
-        accumulated_[idx] = p;
+        points_world_.col(i) = origin + dist * world.col(i);
+        valid_.set(i);
     }
 
     pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::kTotalVecs;
 }
 
-LidarSensor::Matrix3Xm LidarSensor::TransformLocalToWorldSpace(
+LidarSensor::Matrix3xXm LidarSensor::TransformLocalToWorldSpace(
     const Eigen::Map<const Matrix3x3RMm> R,
     const std::size_t start,
     const std::size_t n_rays)
@@ -60,7 +51,7 @@ LidarSensor::Matrix3Xm LidarSensor::TransformLocalToWorldSpace(
 
     const std::size_t remaining = n_rays - first_chunk;
 
-    Matrix3Xm local(3, n_rays);
+    Matrix3xXm local(3, n_rays);
     local.leftCols(first_chunk) = pattern(Eigen::all, Eigen::seq(start, start + first_chunk - 1));
     local.rightCols(remaining) = pattern(Eigen::all, Eigen::seq(0, remaining - 1));
 

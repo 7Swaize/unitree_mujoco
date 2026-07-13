@@ -1,9 +1,5 @@
 #include "lidar_sensor.hpp"
 
-namespace {
-    using Vec3m = Eigen::Vector<mjtNum, 3>;
-    using Matrix3Xm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
-}
 
 void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     if (dt <= 0) return; 
@@ -13,13 +9,17 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     if (n_rays > lidar_data::kTotalVecs) n_rays = lidar_data::kTotalVecs;
 
     Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R(d->site_xmat + 9 * config_.site_id);
-    Eigen::Map<const Vec3m> origin(d->site_xpos + 3 * config_.site_id);
-
-    const auto& pattern = lidar_data::ScanPatternDirectionsMap();
-    Matrix3Xm world = R * pattern(Eigen::all, Eigen::seq(pattern_cursor_, pattern_cursor_ + n_rays - 1));
+    Eigen::Map<const LidarSensor::Vec3m> origin(d->site_xpos + 3 * config_.site_id);
+    LidarSensor::Matrix3Xm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
 
     utils::ResizeLazy(ray_geomid_, n_rays);
     utils::ResizeLazy(ray_dist_, n_rays);
+
+    {
+        for (int i = 0; i < world.cols(); ++i) {
+            assert(!world.col(i).isZero() && "Zero vector found inside 'world'");
+        }
+    }
 
     mj_multiRay(m, d, origin.data(), world.data(),
                 /*geomgroup=*/ nullptr, /*flg_static=*/ 1, config_.exclude_body_id,
@@ -50,6 +50,29 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
 
     pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::kTotalVecs;
 }
+
+LidarSensor::Matrix3Xm LidarSensor::TransformLocalToWorldSpace(
+    const Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R,
+    const std::size_t start,
+    const std::size_t n_rays)
+    const
+{
+    const auto& pattern = lidar_data::ScanPatternDirectionsMap();
+    const std::size_t first_chunk = std::min(n_rays, lidar_data::kTotalVecs - start);
+
+    if (first_chunk == n_rays) {
+        return R * pattern(Eigen::all, Eigen::seq(start, start + n_rays - 1));
+    }
+
+    const std::size_t remaining = n_rays - first_chunk;
+
+    Matrix3Xm local(3, n_rays);
+    local.leftCols(first_chunk) = pattern(Eigen::all, Eigen::seq(start, start + first_chunk - 1));
+    local.rightCols(remaining) = pattern(Eigen::all, Eigen::seq(0, remaining - 1));
+
+    return R * local;
+}
+
 
 void LidarConfig::Load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());

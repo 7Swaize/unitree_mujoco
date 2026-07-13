@@ -9,7 +9,6 @@ from pathlib import Path
 
 GENERATED_FILE_NAME = "generated_scan_pattern"
 
-
 class FileWriter:
     def __init__(self, file: TextIO) -> None:
         self._file: TextIO = file

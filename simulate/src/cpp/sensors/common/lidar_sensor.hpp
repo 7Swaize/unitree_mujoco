@@ -32,9 +32,7 @@ private:
 };
 
 struct LidarPoint {
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
+    float x = 0.0f, y = 0.0f, z = 0.0f;
     float distance = 0.0f;
     int geom_id = -1;
     bool valid = false;
@@ -59,6 +57,7 @@ public:
 private:
     using Vec3m = Eigen::Vector<mjtNum, 3>;
     using Matrix3Xm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
+    using Matrix3x3RMm = Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>;
 
     const LidarConfig config_;
     std::size_t pattern_cursor_ = 0;
@@ -69,8 +68,8 @@ private:
     std::vector<int> ray_geomid_;
     std::vector<mjtNum> ray_dist_;
 
-    LidarSensor::Matrix3Xm TransformLocalToWorldSpace(
-        const Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R,
+    Matrix3Xm TransformLocalToWorldSpace(
+        const Eigen::Map<const Matrix3x3RMm> R,
         const std::size_t start,
         const std::size_t n_rays)
         const;

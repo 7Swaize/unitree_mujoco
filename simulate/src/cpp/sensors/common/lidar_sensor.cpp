@@ -8,9 +8,9 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     if (n_rays == 0) n_rays = 1;
     if (n_rays > lidar_data::kTotalVecs) n_rays = lidar_data::kTotalVecs;
 
-    Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R(d->site_xmat + 9 * config_.site_id);
-    Eigen::Map<const LidarSensor::Vec3m> origin(d->site_xpos + 3 * config_.site_id);
-    LidarSensor::Matrix3Xm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
+    Eigen::Map<const Matrix3x3RMm> R(d->site_xmat + 9 * config_.site_id);
+    Eigen::Map<const Vec3m> origin(d->site_xpos + 3 * config_.site_id);
+    Matrix3Xm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
 
     utils::ResizeLazy(ray_geomid_, n_rays);
     utils::ResizeLazy(ray_dist_, n_rays);
@@ -46,7 +46,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
 }
 
 LidarSensor::Matrix3Xm LidarSensor::TransformLocalToWorldSpace(
-    const Eigen::Map<const Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>> R,
+    const Eigen::Map<const Matrix3x3RMm> R,
     const std::size_t start,
     const std::size_t n_rays)
     const

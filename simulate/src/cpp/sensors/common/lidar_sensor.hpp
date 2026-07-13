@@ -42,8 +42,7 @@ struct LidarPoint {
 
 class LidarSensor {
 public:
-    explicit LidarSensor(const LidarConfig& config) 
-        : config_(config) {
+    explicit LidarSensor(const LidarConfig& config) : config_(config) {
         accumulated_.resize(lidar_data::kTotalVecs);
     }
 

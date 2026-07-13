@@ -11,6 +11,7 @@ template <typename T>
     if (!cfg[key]) {
         throw std::runtime_error("Config: Missing required field '" + key + "'.");
     }
+    
     return cfg[key].as<T>();
 }
 

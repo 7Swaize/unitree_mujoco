@@ -116,7 +116,7 @@ def generate(csv_path: Path, output_hpp_path: Path, output_cpp_path: Path) -> No
             writer.writeln(f"{line_str},")
 
         writer.pop_indent()
-        writer.writeln("}")
+        writer.writeln("};")
         writer.pop_indent()
         writer.writeln("}")
 

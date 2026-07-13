@@ -59,9 +59,9 @@ void LidarConfig::Load(const std::filesystem::path& path) {
     publish_hz = utils::YamlRequireField<int>(cfg, "publish_hz");
     points_per_second = utils::YamlRequireField<int>(cfg, "points_per_second");
 
-    const char* site_name = utils::YamlRequireField<const char*>(cfg, "site_name");
-    site_id = mj_name2id(model_, mjOBJ_SITE, site_name);
+    std::string site_name = utils::YamlRequireField<std::string>(cfg, "site_name");
+    site_id = mj_name2id(model_, mjOBJ_SITE, site_name.c_str());
 
-    const char* exclude_body = utils::YamlRequireField<const char*>(cfg, "exclude_body");
-    exclude_body_id = mj_name2id(model_, mjOBJ_BODY, exclude_body);
+    std::string exclude_body = utils::YamlRequireField<std::string>(cfg, "exclude_body");
+    exclude_body_id = mj_name2id(model_, mjOBJ_BODY, exclude_body.c_str());
 }

@@ -53,12 +53,13 @@ file(GLOB SIM_SRC
 
   src/cpp/lodepng/lodepng.cpp
 
-  src/cpp/sensors/idl/ImageData_.cpp
-  src/cpp/sensors/common/camera_publisher.cpp
   src/cpp/utils/simd.cpp
+  src/cpp/sensors/common/camera_publisher.cpp
+  src/cpp/sensors/common/lidar_publisher.cpp
+  src/cpp/sensors/common/lidar_sensor.cpp
 )
 
-add_executable(go2sim_cpp ${SIM_SRC} src/cpp/main.cc)
+add_executable(go2sim_cpp ${SIM_SRC} ${GENERATED_SCAN_PATTERN_CPP} src/cpp/main.cc)
 add_dependencies(go2sim_cpp generate_scan_pattern)
 
 # Checks from: https://github.com/ipc-sim/IPC/tree/main/cmake/find

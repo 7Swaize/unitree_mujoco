@@ -20,7 +20,8 @@ public:
           config_(config),
           sim_(sim),
           sim_mutex_(sim_mutex),
-          sensor_(LidarSensor{config}) { }
+          sensor_(LidarSensor{config})
+    { }
 
     void Run();
 

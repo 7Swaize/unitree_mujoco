@@ -19,7 +19,7 @@ def main():
     cpp_bin = get_cpp_binary()
 
     cpp = subprocess.Popen([cpp_bin])
-    py = subprocess.Popen([sys.executable,"-m", "go2sim.main"], start_new_session=True)
+    py = subprocess.Popen([sys.executable, "-m", "go2sim.main"], start_new_session=True)
 
     def cleanup(*_):
         py.terminate()

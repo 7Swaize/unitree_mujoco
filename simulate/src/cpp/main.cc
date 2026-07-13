@@ -34,6 +34,8 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
+#include "sensors/common/lidar_publisher.hpp"
+#include "sensors/common/lidar_sensor.hpp"
 #include "sensors/common/camera_publisher.hpp"
 #include "param.h"
 
@@ -655,6 +657,7 @@ void user_key_cb(GLFWwindow* window, int key, int scancode, int act, int mods) {
 // run event loop
 int main(int argc, char **argv)
 {
+  std::printf("Main");
 
   // display an error if running on macOS under Rosetta 2
 #if defined(__APPLE__) && defined(__AVX__)
@@ -665,15 +668,21 @@ int main(int argc, char **argv)
   }
 #endif
 
+  std::printf("Before checking compatibility");
   // print version, check compatibility
-  std::printf("MuJoCo version %s\n", mj_versionString());
+  // std::printf("MuJoCo version %s\n", mj_versionString());
+  std::printf("Printed version");
   if (mjVERSION_HEADER != mj_version())
   {
     mju_error("Headers and library have different versions");
   }
 
+  std::printf("starting to scan plugins");
+
   // scan for libraries in the plugin directory to load additional plugins
   scanPluginLibraries();
+
+  std::cout << "finished scanning plugins";
 
   mjvCamera cam;
   mjv_defaultCamera(&cam);
@@ -684,18 +693,32 @@ int main(int argc, char **argv)
   mjvPerturb pert;
   mjv_defaultPerturb(&pert);
 
+  std::cout << "Starting to parse yamls";
+
   // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
   param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml", proj_dir);
 
   // load camera configuration
   CameraConfig cam_cfg;
-  auto yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
-  if (std::filesystem::exists(yaml_dir)) {
-    cam_cfg.Load(yaml_dir);
+  auto cam_yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
+  if (std::filesystem::exists(cam_yaml_dir)) {
+    cam_cfg.Load(cam_yaml_dir);
   } else {
-    std::printf("camera configuration file not found, using defaults\n");
+    std::printf("Camera configuration file not found, using defaults\n");
   }
+
+  std::cout << "Parsed cam yamls";
+
+  LidarConfig lidar_cfg{m};
+  auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
+  if (std::filesystem::exists(lidar_yaml_dir)) {
+    lidar_cfg.Load(lidar_yaml_dir);
+  } else {
+    std::printf("Camera configuration file not found, using defaults\n");
+  }
+
+  std::cout << "Parsed All yamls";
 
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
@@ -715,6 +738,7 @@ int main(int argc, char **argv)
   GLFWwindow* main_window = static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_;
   
   std::unique_ptr<CameraPublisher> camera_pub;
+  std::unique_ptr<LidarPublisher> lidar_pub;
 
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
@@ -722,7 +746,7 @@ int main(int argc, char **argv)
   std::thread physics_thread_handle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
  
   // wire callbacks
-  glfwSetKeyCallback(main_window,user_key_cb);
+  glfwSetKeyCallback(main_window, user_key_cb);
 
   // IOX2 logging setting
   iox2::set_log_level_from_env_or(iox2::LogLevel::Error);
@@ -741,10 +765,29 @@ int main(int argc, char **argv)
     camera_pub->Run();
   });
 
+  /*
+  // start lidar publisher after physics sim
+  std::thread lidar_thread_handle([&]()
+  {
+    while (!sim_data_ready.load(std::memory_order_acquire)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    lidar_pub = std::make_unique<LidarPublisher>(
+      m, d, lidar_cfg, sim.get(), sim->mtx
+    );
+
+    lidar_pub->Run();
+  });
+  */
+
+  std::cout << "Starting Render loop";
+
   // start simulation UI loop (blocking call)
   sim->RenderLoop();
   physics_thread_handle.join();
   cam_thread_handle.join();
+  // lidar_thread_handle.join();
 
   std::exit(0);
 }

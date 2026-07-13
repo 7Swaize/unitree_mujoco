@@ -657,8 +657,6 @@ void user_key_cb(GLFWwindow* window, int key, int scancode, int act, int mods) {
 // run event loop
 int main(int argc, char **argv)
 {
-  std::printf("Main");
-
   // display an error if running on macOS under Rosetta 2
 #if defined(__APPLE__) && defined(__AVX__)
   if (rosetta_error_msg)
@@ -667,38 +665,29 @@ int main(int argc, char **argv)
     std::exit(1);
   }
 #endif
-
-  std::printf("Before checking compatibility");
-  // print version, check compatibility
-  // std::printf("MuJoCo version %s\n", mj_versionString());
-  std::printf("Printed version");
+ 
+  // check compatibility
   if (mjVERSION_HEADER != mj_version())
   {
     mju_error("Headers and library have different versions");
   }
-
-  std::printf("starting to scan plugins");
-
+ 
   // scan for libraries in the plugin directory to load additional plugins
   scanPluginLibraries();
-
-  std::cout << "finished scanning plugins";
-
+ 
   mjvCamera cam;
   mjv_defaultCamera(&cam);
-
+ 
   mjvOption opt;
   mjv_defaultOption(&opt);
-
+ 
   mjvPerturb pert;
   mjv_defaultPerturb(&pert);
-
-  std::cout << "Starting to parse yamls";
-
+ 
   // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
   param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml", proj_dir);
-
+ 
   // load camera configuration
   CameraConfig cam_cfg;
   auto cam_yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
@@ -708,38 +697,28 @@ int main(int argc, char **argv)
     std::printf("Camera configuration file not found, using defaults\n");
   }
 
-  std::cout << "Parsed cam yamls";
-
-  LidarConfig lidar_cfg{m};
   auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
-  if (std::filesystem::exists(lidar_yaml_dir)) {
-    lidar_cfg.Load(lidar_yaml_dir);
-  } else {
-    std::printf("Camera configuration file not found, using defaults\n");
-  }
-
-  std::cout << "Parsed All yamls";
-
+ 
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
-
+ 
   g_sim = sim.get();
-
+ 
   struct sigaction sa{};
   sa.sa_handler = handle_signal;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;
   sigaction(SIGINT, &sa, nullptr);
   sigaction(SIGTERM, &sa, nullptr);
-
+ 
   // create offscreen window for camera publishing.
   GLFWwindow* main_window = static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_;
   
   std::unique_ptr<CameraPublisher> camera_pub;
   std::unique_ptr<LidarPublisher> lidar_pub;
-
+ 
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
   unitree_thread.detach();
@@ -747,47 +726,50 @@ int main(int argc, char **argv)
  
   // wire callbacks
   glfwSetKeyCallback(main_window, user_key_cb);
-
+ 
   // IOX2 logging setting
   iox2::set_log_level_from_env_or(iox2::LogLevel::Error);
-
+ 
   // start camera publisher after physics sim
   std::thread cam_thread_handle([&]()
   {
     while (!sim_data_ready.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
+ 
     camera_pub = std::make_unique<CameraPublisher>(
       m, d, main_window, cam_cfg, sim.get(), sim->mtx
     );
-
+ 
     camera_pub->Run();
   });
-
-  /*
+ 
   // start lidar publisher after physics sim
   std::thread lidar_thread_handle([&]()
   {
     while (!sim_data_ready.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
+ 
+    LidarConfig lidar_cfg{m};
+    if (std::filesystem::exists(lidar_yaml_dir)) {
+      lidar_cfg.Load(lidar_yaml_dir);
+    } else {
+      std::printf("Lidar configuration file not found, using defaults\n");
+    }
+ 
     lidar_pub = std::make_unique<LidarPublisher>(
       m, d, lidar_cfg, sim.get(), sim->mtx
     );
-
+ 
     lidar_pub->Run();
   });
-  */
-
-  std::cout << "Starting Render loop";
-
+ 
   // start simulation UI loop (blocking call)
   sim->RenderLoop();
   physics_thread_handle.join();
   cam_thread_handle.join();
-  // lidar_thread_handle.join();
-
+  lidar_thread_handle.join();
+ 
   std::exit(0);
 }

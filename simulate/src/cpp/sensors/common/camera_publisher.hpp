@@ -16,12 +16,8 @@
 #include "utils/yaml_utils.hpp"
 #include "utils/simd.hpp"
 #include "utils/aligned_allocator.hpp"
+#include "utils/ipc.hpp"
 
-#include "iox2/iceoryx2.hpp"
-#include "camera_data/FrameData_.hpp"
-#include "qos/camera_qos.hpp"
-
-namespace ioxifaces = iceoryx_interfaces::camera;
 
 struct CameraConfig {
     int res_x = 620;
@@ -60,9 +56,9 @@ private:
     mujoco::Simulate* sim_;
     mujoco::SimulateMutex& sim_mutex_;
 
-    iox2::Node<iox2::ServiceType::Ipc> iox2_node_;
-    iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_service_;
-    iox2::Publisher<iox2::ServiceType::Ipc, ioxifaces::FrameData_, void> camera_pub_;
+    ipc::Node iox2_node_;
+    ipc::PubSubFactory<ipc::FrameData> camera_service_;
+    ipc::Publisher<ipc::FrameData> camera_pub_;
 
     void PublishFrames(unsigned char* rgb_data, uint16_t* depth_data);
 

@@ -14,7 +14,7 @@ namespace iceoryx_interfaces::camera {
         float depth_min;
         float depth_max;
 
-        uint8_t rgb_data[kFrameBufferElementsRgb];
-        uint16_t depth_data[kFrameBufferElementsDepth];
+        uint8_t rgb_data[kRgbBufferElementCount];
+        uint16_t depth_data[kDepthBufferElementCount];
     };
 }

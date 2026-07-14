@@ -1,7 +1,6 @@
 #include "camera_publisher.hpp"
 
-using namespace iox2;
-using namespace iceoryx_interfaces::camera;
+using namespace ipc::camera;
 
 void CameraConfig::Load(const std::filesystem::path& path) {
     YAML::Node cfg = YAML::LoadFile(path.string());
@@ -18,24 +17,23 @@ CameraPublisher::CameraPublisher(mjModel* model,
                                  mujoco::Simulate* sim,
                                  mujoco::SimulateMutex& sim_mutex)
     : model_(model),
-      data_(data),
-      cfg_(cam_cfg),
-      sim_(sim),
-      sim_mutex_(sim_mutex),
-      iox2_node_(NodeBuilder()
-                    .signal_handling_mode(SignalHandlingMode::Disabled)
-                    .create<ServiceType::Ipc>()
-                    .value()),
-      camera_service_(iox2_node_.service_builder(ServiceName::create(kTopicSimCamera).value())
-                          .publish_subscribe<FrameData_>()
-                          .max_publishers(kMaxPublishers)
-                          .max_subscribers(kMaxSubscribers)
-                          .subscriber_max_buffer_size(kSubscriberMaxBufferSize)
-                          .subscriber_max_borrowed_samples(kSubscriberMaxBorrowedSamples)
-                          .history_size(kHistorySize)
-                          .open_or_create()
-                          .value()),
-      camera_pub_(camera_service_.publisher_builder().create().value())
+    data_(data),
+    cfg_(cam_cfg),
+    sim_(sim),
+    sim_mutex_(sim_mutex),
+    iox2_node_(ipc::MakeNode()),
+    camera_service_(ipc::MakeService<ipc::FrameData>(
+        iox2_node_,
+        kCameraTopicName,
+        {
+            .max_publishers = kMaxPublishers,
+            .max_subscribers = kMaxSubscribers,
+            .subscriber_max_buffer_size = kSubscriberMaxBufferSize,
+            .subscriber_max_borrowed_samples = kSubscriberMaxBorrowedSamples,
+            .history_size = kHistorySize
+        })
+    ),
+    camera_pub_(ipc::MakePublisher<ipc::FrameData>(camera_service_))
 {
     // Reference: https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -64,8 +62,8 @@ void CameraPublisher::PublishFrames(unsigned char* rgb_data, uint16_t* depth_dat
     payload.depth_min = cfg_.near_clip;
     payload.depth_max = cfg_.far_clip;
 
-    std::memcpy(payload.rgb_data, reinterpret_cast<uint8_t*>(rgb_data), kFrameBufferElementsRgb * sizeof(uint8_t));
-    std::memcpy(payload.depth_data, depth_data, kFrameBufferElementsDepth * sizeof(uint16_t));
+    std::memcpy(payload.rgb_data, reinterpret_cast<uint8_t*>(rgb_data), kRgbBufferElementCount * sizeof(uint8_t));
+    std::memcpy(payload.depth_data, depth_data, kDepthBufferElementCount * sizeof(uint16_t));
 
     auto initialized = assume_init(std::move(sample));
     send(std::move(initialized)).value();
@@ -119,9 +117,9 @@ void CameraPublisher::GLFWRenderHandler::RenderLoop() {
 
     mjrRect viewport = {0, 0, kFrameWidth, kFrameHeight};
 
-    std::vector<unsigned char> rgb_buf(kFrameBufferElementsRgb);
-    std::vector<float, utils::AlignedAllocator<float, SIMD_ALIGNMENT>> depth_buf(kFrameBufferElementsDepth);
-    std::vector<uint16_t, utils::AlignedAllocator<uint16_t, SIMD_ALIGNMENT>> depth_buf_ret(kFrameBufferElementsDepth);
+    std::vector<unsigned char> rgb_buf(kRgbBufferElementCount);
+    std::vector<float, utils::AlignedAllocator<float, SIMD_ALIGNMENT>> depth_buf(kDepthBufferElementCount);
+    std::vector<uint16_t, utils::AlignedAllocator<uint16_t, SIMD_ALIGNMENT>> depth_buf_ret(kDepthBufferElementCount);
 
     {
         assert(utils::IsAligned(reinterpret_cast<std::size_t>(depth_buf.data()), SIMD_ALIGNMENT));

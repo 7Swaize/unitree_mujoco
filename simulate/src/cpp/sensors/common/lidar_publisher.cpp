@@ -28,13 +28,38 @@ void LidarPublisher::LoopInternal() {
         {
             mujoco::MutexLock lock(sim_mutex_);
             sensor_.Scan(model_, data_, wall_dt);
-            stamp_sec = static_cast<double>(data_->time);
         }
 
-        PublishCloud(stamp_sec);
+        auto wall_now = std::chrono::system_clock::now();
+        int64_t stamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(wall_now.time_since_epoch()).count();
+
+        PublishCloud(stamp_ns);
     }
 }
 
-void LidarPublisher::PublishCloud(double stamp_sec) {
-    const auto& points = sensor_.LatestScan();
+template <typename T = mjtNum>
+void LidarPublisher::PublishCloud(int64_t stamp_ns) {
+    const LidarSensor::LidarScanView& view = sensor_.LatestScan();
+    const uint64_t N = static_cast<uint64_t>(view.size());
+
+    auto sample = lidar_pub_.loan_slice_uninit(N).value();
+    sample.user_header_mut().cols = static_cast<uint32_t>(view.cols());
+    sample.user_header_mut().rows = static_cast<uint32_t>(view.rows());
+    sample.user_header_mut().stamp_ns = stamp_ns;
+
+    if constexpr (std::is_same_v<T, double>) {
+        iox2::bb::ImmutableSlice<double> src_slice(view.data(), N);
+        auto initialized_sample = sample.write_from_slice(src_slice);
+        send(std::move(initialized_sample)).value();
+    } 
+    else {
+        utils::ResizeLazy(conversion_scratch_, N);
+        std::transform(view.data(), view.data() + N,
+                        conversion_scratch_.begin(),
+                        [](T v) { return static_cast<double>(v); });
+
+        iox2::bb::ImmutableSlice<double> src_slice(conversion_scratch_.data(), N);
+        auto initialized_sample = sample.write_from_slice(src_slice);
+        send(std::move(initialized_sample)).value();
+    }
 }

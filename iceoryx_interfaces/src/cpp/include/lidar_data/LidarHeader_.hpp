@@ -8,6 +8,6 @@ namespace iceoryx_interfaces::lidar {
 
         uint32_t rows;
         uint32_t cols;
-        uint64_t stamp_ns;
+        int64_t stamp_ns;
     };
 }

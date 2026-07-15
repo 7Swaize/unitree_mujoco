@@ -19,20 +19,16 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
                 /*geomgroup=*/ nullptr, /*flg_static=*/ 1, config_.exclude_body_id,
                 ray_geomid_stratch_.data(), ray_dist_scratch_.data(), n_rays, config_.max_range);
 
-    valid_.reset();
-
+    std::size_t j = 0;
     for (std::size_t i = 0; i < n_rays; ++i) {
         const mjtNum dist = ray_dist_scratch_[i];
 
-        const bool hit = (dist >= 0.0) && (dist >= config_.min_range);
-        if (!hit) {
-            continue;
+        if (dist >= 0.0 && dist >= config_.min_range) {
+            points_world_.col(j++) = origin + dist * world.col(i);
         }
-
-        points_world_.col(i) = origin + dist * world.col(i);
-        valid_.set(i);
     }
 
+    valid_count_ = j;
     pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::kTotalVecs;
 }
 

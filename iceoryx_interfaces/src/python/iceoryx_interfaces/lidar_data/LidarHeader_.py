@@ -5,7 +5,7 @@ class LidarHeader_(ctypes.Structure):
 	_fields_ = [
 		("rows", ctypes.c_int),
 		("cols", ctypes.c_int),
-		("stamp_ns", ctypes.c_uint64),
+		("stamp_ns", ctypes.c_int64),
 	]
 
 	@staticmethod

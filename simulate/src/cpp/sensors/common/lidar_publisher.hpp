@@ -7,6 +7,7 @@
 
 #include "sensors/common/lidar_sensor.hpp"
 #include "utils/ipc.hpp"
+#include "utils/container_utils.hpp"
 
 
 class LidarPublisher {
@@ -55,8 +56,11 @@ private:
     ipc::PubSubFactory<ipc::LidarData, ipc::LidarHeader> lidar_service_;
     ipc::Publisher<ipc::LidarData, ipc::LidarHeader> lidar_pub_;
 
-    static constexpr uint64_t kAllocationInitialSizeHint = 20000;
+    static constexpr uint64_t kAllocationInitialSizeHint = 20000 * sizeof(double);
+    std::vector<double> conversion_scratch_;
 
     void LoopInternal();
-    void PublishCloud(double stamp_sec);
+
+    template <typename T = mjtNum>
+    void PublishCloud(int64_t stamp_ns);
 };

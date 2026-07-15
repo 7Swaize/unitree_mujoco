@@ -4,7 +4,6 @@
 #include "simulate.h"
 
 #include <filesystem>
-#include <bitset>
 #include <vector>
 #include <span>
 #include <Eigen/Core>
@@ -18,10 +17,8 @@ class LidarConfig {
 public:
     float min_range = 0.10f;
     float max_range = 40.0f;
-
     int publish_hz = 10;
     int points_per_second = 200000;
-
     int site_id = -1;
     int exclude_body_id = -1;
 
@@ -39,24 +36,12 @@ public:
     using Vec3m = Eigen::Vector<mjtNum, 3>;
     using Matrix3xXm = Eigen::Matrix<mjtNum, 3, Eigen::Dynamic>;
     using Matrix3x3RMm = Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>;
+    using LidarScanView = Eigen::Block<const Matrix3xXm, 3, Eigen::Dynamic, true>;
 
-    struct LidarScanView {
-        Eigen::Block<const Matrix3xXm, 3, Eigen::Dynamic, true> points;
-        const std::bitset<lidar_data::kTotalVecs>& valid;
-        const std::size_t n_rays;
-    };
+    explicit LidarSensor(const LidarConfig& config) : config_(config), points_world_(3, lidar_data::kTotalVecs) { }
 
-    explicit LidarSensor(const LidarConfig& config)
-        : config_(config),
-          points_world_(3, lidar_data::kTotalVecs)
-    { }
-
-    FORCE_INLINE LidarScanView LatestScan() const noexcept {
-        return LidarScanView {
-            points_world_.leftCols(n_rays_),
-            valid_,
-            n_rays_
-        };
+    FORCE_INLINE const LidarScanView LatestScan() const noexcept {
+        return points_world_.leftCols(valid_count_);
     }
     
     void Scan(const mjModel* m, mjData* data, const double dt);
@@ -66,12 +51,11 @@ private:
     const LidarConfig config_;
 
     std::size_t pattern_cursor_ = 0;
-    std::size_t n_rays_ = 0;
     std::vector<int> ray_geomid_stratch_;
     std::vector<mjtNum> ray_dist_scratch_;
 
-    Matrix3xXm points_world_; 
-    std::bitset<lidar_data::kTotalVecs> valid_;
+    Matrix3xXm points_world_;
+    std::size_t valid_count_ = 0;
 
     Matrix3xXm TransformLocalToWorldSpace(
         const Eigen::Map<const Matrix3x3RMm> R,

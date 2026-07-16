@@ -14,5 +14,4 @@ __pycache__/
 **/install/
 
 simulate/mujoco
-
 simulate/src/cpp/sensors/data

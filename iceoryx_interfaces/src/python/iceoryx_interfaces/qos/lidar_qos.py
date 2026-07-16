@@ -1,9 +1,11 @@
+import ctypes
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class LidarQoS:
-	TOPIC_ROS_LIDAR_DECODED = "control/lidar_decoded"
-	TOPIC_ROS_LIDAR_FILTERED = "control/lidar_filtered"
+	TOPIC_LIDAR_DECODED = "control/lidar_decoded"
+
+	INITIAL_SLICE_LEN_HINT = 20000 * ctypes.sizeof(ctypes.c_double)
 
 	MAX_PUBLISHERS = 1
 	MAX_SUBSCRIBERS = 1

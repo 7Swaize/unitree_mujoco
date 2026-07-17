@@ -5,4 +5,4 @@ from dataclasses import dataclass
 class LidarQoS:
 	TOPIC_LIDAR_DECODED = "control/lidar_decoded"
 
-	RESPONSE_INITIAL_SLICE_LEN_HINT = 20000 * ctypes.sizeof(ctypes.c_double)
+	RESPONSE_INITIAL_SLICE_LEN_HINT = 20000

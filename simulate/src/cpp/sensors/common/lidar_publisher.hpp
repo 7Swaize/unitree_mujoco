@@ -15,7 +15,7 @@
 class LidarPublisher {
 private:
     using Request = uint32_t;
-    using Response = iox2::bb::Slice<double>;
+    using Response = iox2::bb::Slice<float>;
     using RequestHeader = void;
     using ResponseHeader = ipc::lidar::LidarHeader_;
     using ActiveRequestOptional = iox2::bb::stl::Optional<
@@ -60,7 +60,7 @@ private:
     ipc::RRServer<Request, Response, RequestHeader, ResponseHeader> lidar_rr_server_ipc_;
     ActiveRequestOptional active_request_ipc_;
 
-    std::vector<double> ipc_conversion_scratch_;
+    std::vector<float> ipc_conversion_scratch_;
 
     static constexpr float kIPCAwaitRequestNodeCycleTime = 0.02;
     uint32_t publish_hz_ = 0;

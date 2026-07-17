@@ -70,8 +70,8 @@ void LidarPublisher::PublishCloud(int64_t stamp_ns) {
     response.user_header_mut().rows = static_cast<uint32_t>(view.rows());
     response.user_header_mut().stamp_ns = stamp_ns;
 
-    if constexpr (std::is_same_v<T, double>) {
-        iox2::bb::ImmutableSlice<double> src_slice(view.data(), N);
+    if constexpr (std::is_same_v<T, float>) {
+        iox2::bb::ImmutableSlice<float> src_slice(view.data(), N);
         auto initialized_response = response.write_from_slice(src_slice);
         send(std::move(initialized_response)).value();
     }
@@ -79,9 +79,9 @@ void LidarPublisher::PublishCloud(int64_t stamp_ns) {
         utils::ResizeLazy(ipc_conversion_scratch_, N);
         std::transform(view.data(), view.data() + N,
                         ipc_conversion_scratch_.begin(),
-                        [](T v) { return static_cast<double>(v); });
+                        [](T v) { return static_cast<float>(v); });
 
-        iox2::bb::ImmutableSlice<double> src_slice(ipc_conversion_scratch_.data(), N);
+        iox2::bb::ImmutableSlice<float> src_slice(ipc_conversion_scratch_.data(), N);
         auto initialized_response = response.write_from_slice(src_slice);
         send(std::move(initialized_response)).value();
     }

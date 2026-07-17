@@ -65,10 +65,6 @@ void LidarPublisher::PublishCloud(int64_t stamp_ns) {
     const LidarSensor::LidarScanView& view = sensor_.LatestScan();
     const uint64_t N = static_cast<uint64_t>(view.size());
 
-    std::cout << "Lidar scan: rows=" << view.rows()
-        << ", cols=" << view.cols()
-        << ", size=" << N << std::endl;
-
     auto response = active_request_ipc_->loan_slice_uninit(N).value();
     response.user_header_mut().cols = static_cast<uint32_t>(view.cols());
     response.user_header_mut().rows = static_cast<uint32_t>(view.rows());

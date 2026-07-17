@@ -5,9 +5,5 @@
 namespace iceoryx_interfaces::lidar {
     inline constexpr const char* kLidarTopicName = "control/lidar_decoded";
 
-    inline constexpr int kMaxPublishers = 1;
-    inline constexpr int kMaxSubscribers = 1;
-    inline constexpr int kSubscriberMaxBufferSize = 3;
-    inline constexpr int kSubscriberMaxBorrowedSamples = 2;
-    inline constexpr int kHistorySize = 1;
+    inline constexpr uint64_t kResponseAllocationInitialSizeHint = 20000 * sizeof(double);
 } // namespace iceoryx_interfaces::lidar

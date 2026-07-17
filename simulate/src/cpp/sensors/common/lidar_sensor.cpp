@@ -60,7 +60,6 @@ void LidarConfig::Load(const std::filesystem::path& path) {
 
     min_range = utils::YamlRequireField<float>(cfg, "min_range");
     max_range = utils::YamlRequireField<float>(cfg, "max_range");
-    publish_hz = utils::YamlRequireField<int>(cfg, "publish_hz");
     points_per_second = utils::YamlRequireField<int>(cfg, "points_per_second");
 
     std::string site_name = utils::YamlRequireField<std::string>(cfg, "site_name");

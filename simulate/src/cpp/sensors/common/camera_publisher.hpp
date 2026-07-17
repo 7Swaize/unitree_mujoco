@@ -32,6 +32,9 @@ struct CameraConfig {
 
 
 class CameraPublisher {
+private:
+    using FrameData = ipc::camera::FrameData_;
+
 public:
     CameraPublisher(mjModel* model,
                     mjData* data,
@@ -57,8 +60,8 @@ private:
     mujoco::SimulateMutex& sim_mutex_;
 
     ipc::Node iox2_node_;
-    ipc::PubSubFactory<ipc::FrameData> camera_service_;
-    ipc::Publisher<ipc::FrameData> camera_pub_;
+    ipc::PubSubFactory<FrameData> camera_service_;
+    ipc::PubSubPublisher<FrameData> camera_pub_;
 
     void PublishFrames(unsigned char* rgb_data, uint16_t* depth_data);
 

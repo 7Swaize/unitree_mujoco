@@ -4,12 +4,7 @@ min_range: 0.10
 # Maximum range, in meters, passed as mj_multiRay's cutoff — anything
 # beyond this is treated as a miss.
 max_range: 40.0
- 
-# How often LidarPublisher publishes a point-cloud message, in Hz.
-# Independent of points_per_second: this controls message cadence, not
-# raycast density. points_per_second / publish_hz = points per message.
-publish_hz: 10
- 
+
 # Raycast budget per second of wall-clock time, matching the physical
 # sensor's output rate. Mid-360 spec: 200,000 points/sec.
 points_per_second: 200000

@@ -17,7 +17,6 @@ class LidarConfig {
 public:
     float min_range = 0.10f;
     float max_range = 40.0f;
-    int publish_hz = 10;
     int points_per_second = 200000;
     int site_id = -1;
     int exclude_body_id = -1;

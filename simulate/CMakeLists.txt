@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(unitree_mujoco)
+project(unitree_mujoco VERSION 1.1.0)
 
 include(CheckCXXSourceRuns)
 

@@ -23,7 +23,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     for (std::size_t i = 0; i < n_rays; ++i) {
         const mjtNum dist = ray_dist_scratch_[i];
 
-        if (dist >= 0.0 && dist >= config_.min_range && dist <= config_.max_range) {
+        if (dist >= config_.min_range && dist <= config_.max_range) {
             points_world_.col(j++) = origin + dist * world.col(i);
         }
     }

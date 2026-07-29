@@ -4,9 +4,3 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class CameraQoS:
     TOPIC_SIM_CAMERA = "sim/cam"
-    
-    MAX_PUBLISHERS = 1
-    MAX_SUBSCRIBERS = 1
-    SUBSCRIBER_MAX_BUFFER_SIZE = 3 # we really only care about the most recent frames
-    SUBSCRIBER_MAX_BORROWED_SAMPLES = 2
-    HISTORY_SIZE = 1

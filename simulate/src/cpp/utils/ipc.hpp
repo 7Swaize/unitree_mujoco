@@ -19,14 +19,6 @@ namespace ipc {
     template <typename TPayload, typename THeader = void>
     using PubSubPublisher = iox2::Publisher<iox2::ServiceType::Ipc, TPayload, THeader>;
 
-    struct ServiceQoS {
-        int max_publishers;
-        int max_subscribers;
-        int subscriber_max_buffer_size;
-        int subscriber_max_borrowed_samples;
-        int history_size;
-    };
-
     inline Node MakeNode() {
         return iox2::NodeBuilder()
             .signal_handling_mode(iox2::SignalHandlingMode::Disabled)
@@ -35,26 +27,16 @@ namespace ipc {
     }
 
     template <typename TPayload, typename THeader = void>
-    PubSubFactory<TPayload, THeader> MakeService(Node& node, const char* topic_name, const ServiceQoS& qos) {
+    PubSubFactory<TPayload, THeader> MakeService(Node& node, const char* topic_name) {
         if constexpr (std::is_void_v<THeader>) {
             return node.service_builder(iox2::ServiceName::create(topic_name).value())
                 .template publish_subscribe<TPayload>()
-                .max_publishers(qos.max_publishers)
-                .max_subscribers(qos.max_subscribers)
-                .subscriber_max_buffer_size(qos.subscriber_max_buffer_size)
-                .subscriber_max_borrowed_samples(qos.subscriber_max_borrowed_samples)
-                .history_size(qos.history_size)
                 .open_or_create()
                 .value();
         } else {
             return node.service_builder(iox2::ServiceName::create(topic_name).value())
                 .template publish_subscribe<TPayload>()
                 .template user_header<THeader>()
-                .max_publishers(qos.max_publishers)
-                .max_subscribers(qos.max_subscribers)
-                .subscriber_max_buffer_size(qos.subscriber_max_buffer_size)
-                .subscriber_max_borrowed_samples(qos.subscriber_max_borrowed_samples)
-                .history_size(qos.history_size)
                 .open_or_create()
                 .value();
         }

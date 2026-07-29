@@ -22,17 +22,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
     sim_(sim),
     sim_mutex_(sim_mutex),
     iox2_node_(ipc::MakeNode()),
-    camera_service_(ipc::MakeService<FrameData>(
-        iox2_node_,
-        kCameraTopicName,
-        {
-            .max_publishers = kMaxPublishers,
-            .max_subscribers = kMaxSubscribers,
-            .subscriber_max_buffer_size = kSubscriberMaxBufferSize,
-            .subscriber_max_borrowed_samples = kSubscriberMaxBorrowedSamples,
-            .history_size = kHistorySize
-        })
-    ),
+    camera_service_(ipc::MakeService<FrameData>(iox2_node_, kCameraTopicName)),
     camera_pub_(ipc::MakePublisher<FrameData>(camera_service_))
 {
     // Reference: https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc

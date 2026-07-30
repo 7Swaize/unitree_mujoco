@@ -10,14 +10,16 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
 
     Eigen::Map<const Matrix3x3RMm> R(d->site_xmat + 9 * config_.site_id);
     Eigen::Map<const Vec3m> origin(d->site_xpos + 3 * config_.site_id);
-    Matrix3xXm world = TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
 
-    utils::ResizeLazy(ray_geomid_stratch_, n_rays * kResizeLazyMultiplier);
+    TransformLocalToWorldSpace(R, pattern_cursor_, n_rays);
+    const auto world = world_dirs_scratch_.leftCols(n_rays);
+
+    utils::ResizeLazy(ray_geomid_scratch_, n_rays * kResizeLazyMultiplier);
     utils::ResizeLazy(ray_dist_scratch_, n_rays * kResizeLazyMultiplier);
 
     mj_multiRay(m, d, origin.data(), world.data(),
                 /*geomgroup=*/ nullptr, /*flg_static=*/ 1, config_.exclude_body_id,
-                ray_geomid_stratch_.data(), ray_dist_scratch_.data(), n_rays, config_.max_range);
+                ray_geomid_scratch_.data(), ray_dist_scratch_.data(), n_rays, config_.max_range);
 
     std::size_t j = 0;
     for (std::size_t i = 0; i < n_rays; ++i) {
@@ -32,27 +34,26 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     pattern_cursor_ = (pattern_cursor_ + n_rays) % lidar_data::kTotalVecs;
 }
 
-LidarSensor::Matrix3xXm LidarSensor::TransformLocalToWorldSpace(
-    const Eigen::Map<const Matrix3x3RMm> R,
+
+void LidarSensor::TransformLocalToWorldSpace(
+    const Eigen::Map<const Matrix3x3RMm>& R,
     const std::size_t start,
     const std::size_t n_rays)
-    const
 {
     const auto& pattern = lidar_data::ScanPatternDirectionsMap();
     const std::size_t first_chunk = std::min(n_rays, lidar_data::kTotalVecs - start);
+    auto dst = world_dirs_scratch_.leftCols(n_rays);
 
     if (first_chunk == n_rays) {
-        return R * pattern(Eigen::all, Eigen::seq(start, start + n_rays - 1));
+        dst.noalias() = R * pattern(Eigen::all, Eigen::seq(start, start + n_rays - 1));
+        return;
     }
-
+ 
     const std::size_t remaining = n_rays - first_chunk;
-
-    Matrix3xXm local(3, n_rays);
-    local.leftCols(first_chunk) = pattern(Eigen::all, Eigen::seq(start, start + first_chunk - 1));
-    local.rightCols(remaining) = pattern(Eigen::all, Eigen::seq(0, remaining - 1));
-
-    return R * local;
+    dst.leftCols(first_chunk).noalias() = R * pattern(Eigen::all, Eigen::seq(start, start + first_chunk - 1));
+    dst.rightCols(remaining).noalias() = R * pattern(Eigen::all, Eigen::seq(0, remaining - 1));
 }
+
 
 
 void LidarConfig::Load(const std::filesystem::path& path) {
@@ -61,6 +62,9 @@ void LidarConfig::Load(const std::filesystem::path& path) {
     min_range = utils::YamlRequireField<float>(cfg, "min_range");
     max_range = utils::YamlRequireField<float>(cfg, "max_range");
     points_per_second = utils::YamlRequireField<int>(cfg, "points_per_second");
+
+    utils::YamlRequireLess(min_range, max_range, "min_range", "max_range");
+    utils::YamlRequirePositive(points_per_second, "points_per_second");
 
     std::string site_name = utils::YamlRequireField<std::string>(cfg, "site_name");
     site_id = mj_name2id(model_, mjOBJ_SITE, site_name.c_str());

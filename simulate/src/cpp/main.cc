@@ -34,9 +34,9 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
-#include "sensors/common/lidar_publisher.hpp"
-#include "sensors/common/lidar_sensor.hpp"
 #include "sensors/common/camera_publisher.hpp"
+#include "sensors/common/lidar_publisher.hpp"
+#include "sensors/common/heightmap_publisher.hpp"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
@@ -698,6 +698,7 @@ int main(int argc, char **argv)
   }
 
   auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
+  auto heightmap_yaml_dir = proj_dir / "resources" / "config" / "heightmap.yaml";
  
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
@@ -718,6 +719,7 @@ int main(int argc, char **argv)
   
   std::unique_ptr<CameraPublisher> camera_pub;
   std::unique_ptr<LidarPublisher> lidar_pub;
+  std::unique_ptr<HeightmapPublisher> heightmap_pub;
  
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
@@ -744,7 +746,6 @@ int main(int argc, char **argv)
     camera_pub->Run();
   });
  
-  // start lidar publisher after physics sim
   std::thread lidar_thread_handle([&]()
   {
     while (!sim_data_ready.load(std::memory_order_acquire)) {
@@ -752,11 +753,7 @@ int main(int argc, char **argv)
     }
  
     LidarConfig lidar_cfg{m};
-    if (std::filesystem::exists(lidar_yaml_dir)) {
-      lidar_cfg.Load(lidar_yaml_dir);
-    } else {
-      std::printf("Lidar configuration file not found, using defaults\n");
-    }
+    lidar_cfg.Load(lidar_yaml_dir);
  
     lidar_pub = std::make_unique<LidarPublisher>(
       m, d, lidar_cfg, sim.get(), sim->mtx
@@ -764,12 +761,30 @@ int main(int argc, char **argv)
  
     lidar_pub->Run();
   });
+
+  std::thread heightmap_thread_handle([&]()
+  {
+    while (!sim_data_ready.load(std::memory_order_acquire)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    
+    HeightmapConfig heightmap_cfg{m};
+    heightmap_cfg.Load(heightmap_yaml_dir);
+
+    heightmap_pub = std::make_unique<HeightmapPublisher>(
+      m, d, heightmap_cfg, sim.get(), sim->mtx
+    );
+
+    heightmap_pub->Run();
+  });
  
   // start simulation UI loop (blocking call)
   sim->RenderLoop();
+
   physics_thread_handle.join();
   cam_thread_handle.join();
   lidar_thread_handle.join();
+  heightmap_thread_handle.join();
  
   std::exit(0);
 }

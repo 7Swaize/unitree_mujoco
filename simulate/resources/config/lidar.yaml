@@ -10,7 +10,7 @@ max_range: 40.0
 points_per_second: 200000
  
 # Name of the MJCF <site> the sensor is mounted at (must exist in the
-# loaded model; resolved via mj_name2id at LidarPublisher construction).
+# loaded model; resolved via mj_name2id).
 site_name: "Mid360 Lidar Site"
  
 # Name of the MJCF <body> to exclude from ray hits. Required for the same

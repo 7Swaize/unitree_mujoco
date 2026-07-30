@@ -57,6 +57,8 @@ file(GLOB SIM_SRC
   src/cpp/sensors/common/camera_publisher.cpp
   src/cpp/sensors/common/lidar_publisher.cpp
   src/cpp/sensors/common/lidar_sensor.cpp
+  src/cpp/sensors/common/heightmap_publisher.cpp
+  src/cpp/sensors/common/heightmap_sensor.cpp
 )
 
 add_executable(go2sim_cpp ${SIM_SRC} ${GENERATED_SCAN_PATTERN_CPP} src/cpp/main.cc)

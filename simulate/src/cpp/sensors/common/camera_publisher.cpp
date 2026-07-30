@@ -8,6 +8,9 @@ void CameraConfig::Load(const std::filesystem::path& path) {
     far_clip = utils::YamlRequireField<float>(cfg, "far_clip");
     near_clip = utils::YamlRequireField<float>(cfg, "near_clip");
     publish_fps = utils::YamlRequireField<int>(cfg, "publish_fps");
+
+    utils::YamlRequireLess(near_clip, far_clip, "near_clip", "far_clip");
+    utils::YamlRequirePositive(publish_fps, "publish_fps");
 }
 
 CameraPublisher::CameraPublisher(mjModel* model,
@@ -22,7 +25,7 @@ CameraPublisher::CameraPublisher(mjModel* model,
     sim_(sim),
     sim_mutex_(sim_mutex),
     iox2_node_(ipc::MakeNode()),
-    camera_service_(ipc::MakeService<FrameData>(iox2_node_, kCameraTopicName)),
+    camera_service_(ipc::MakePubSubService<FrameData>(iox2_node_, kCameraTopicName)),
     camera_pub_(ipc::MakePublisher<FrameData>(camera_service_))
 {
     // Reference: https://github.com/google-deepmind/mujoco/blob/main/sample/record.cc
@@ -45,7 +48,7 @@ void CameraPublisher::Run() {
 
 void CameraPublisher::PublishFrames(unsigned char* rgb_data, uint16_t* depth_data) {
     auto sample = camera_pub_.loan_uninit().value();
-    new (&sample.payload_mut()) FrameData_{};
+    new (&sample.payload_mut()) FrameData_;
 
     auto& payload = sample.payload_mut();
 

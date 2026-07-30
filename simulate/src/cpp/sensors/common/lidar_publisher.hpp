@@ -9,7 +9,6 @@
 #include "sensors/common/lidar_sensor.hpp"
 #include "utils/ipc.hpp"
 #include "utils/container_utils.hpp"
-#include "utils/debug.hpp"
 
 
 class LidarPublisher {
@@ -30,18 +29,18 @@ public:
                    mujoco::SimulateMutex& sim_mutex)
         : model_(model),
         data_(data),
-            config_(config),
-            sim_(sim),
-            sim_mutex_(sim_mutex),
-            sensor_(LidarSensor{config}),
-            iox2_node_(ipc::MakeNode()),
-            lidar_rr_factory_ipc_(ipc::MakeRequestResponseFactory<Request, Response, RequestHeader, ResponseHeader>(
-                iox2_node_, ipc::lidar::kLidarTopicName
-            )),
-            lidar_rr_server_ipc_(ipc::MakeRequestResponseServerDynamicData<
-                Request, Response, RequestHeader, ResponseHeader, iox2::AllocationStrategy::PowerOfTwo
-            >(lidar_rr_factory_ipc_, ipc::lidar::kResponseAllocationInitialSizeHint))
-        { }
+        config_(config),
+        sim_(sim),
+        sim_mutex_(sim_mutex),
+        sensor_(LidarSensor{config}),
+        iox2_node_(ipc::MakeNode()),
+        lidar_rr_factory_ipc_(ipc::MakeRequestResponseFactory<Request, Response, RequestHeader, ResponseHeader>(
+            iox2_node_, ipc::lidar::kLidarTopicName
+        )),
+        lidar_rr_server_ipc_(ipc::MakeRequestResponseServerDynamicData<
+            Request, Response, RequestHeader, ResponseHeader, iox2::AllocationStrategy::PowerOfTwo
+        >(lidar_rr_factory_ipc_, ipc::lidar::kResponseAllocationInitialSizeHint))
+    { }
 
 
     void Run();

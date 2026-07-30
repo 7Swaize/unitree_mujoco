@@ -12,7 +12,6 @@ void LidarPublisher::Run() {
 void LidarPublisher::LoopInternalIPCAwaitRequest() {
     auto frame_duration = std::chrono::duration<double>(kIPCAwaitRequestNodeCycleTime);
     auto next_time = std::chrono::steady_clock::now();
-    auto last_tick = std::chrono::steady_clock::now();
 
     while (!sim_->exitrequest.load(std::memory_order_acquire)) {
         auto now = std::chrono::steady_clock::now();
@@ -36,7 +35,7 @@ void LidarPublisher::LoopInternalIPCPublish() {
     auto next_time = std::chrono::steady_clock::now();
     auto last_tick = std::chrono::steady_clock::now();
 
-    while (!sim_->exitrequest.load(std::memory_order_acquire) || !active_request_ipc_->is_connected()) {
+    while (!sim_->exitrequest.load(std::memory_order_acquire) && !active_request_ipc_->is_connected()) {
         auto now = std::chrono::steady_clock::now();
         if (now < next_time) {
             std::this_thread::sleep_until(next_time);
@@ -47,7 +46,6 @@ void LidarPublisher::LoopInternalIPCPublish() {
         double wall_dt = std::chrono::duration<double>(now - last_tick).count();
         last_tick = now;
 
-        double stamp_sec = 0.0;
         {
             mujoco::MutexLock lock(sim_mutex_);
             sensor_.Scan(model_, data_, wall_dt);

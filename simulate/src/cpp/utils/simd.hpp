@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <iostream>
 #include <cstdlib>
@@ -28,10 +30,13 @@
 
 #if defined(_MSC_VER)
     #define FORCE_INLINE __forceinline
+    #define RESTRICT __restrict
 #elif defined(__GNUC__) || defined(__clang__)
     #define FORCE_INLINE __attribute__((always_inline)) inline
+    #define RESTRICT __restrict__
 #else
     #define FORCE_INLINE inline
+    #define RESTRICT
 #endif
 
 namespace simd {
@@ -84,7 +89,7 @@ struct VecTraits;
 template <>
 struct VecTraits<float> {
     using VecType = VecF32;
-    
+
     FORCE_INLINE static VecType Load(const float* p) noexcept { return VecLoadF32(p); }
     FORCE_INLINE static void Store(float* p, const VecType v) noexcept { VecStoreF32(p, v); }
 };
@@ -92,12 +97,12 @@ struct VecTraits<float> {
 template <>
 struct VecTraits<uint16_t> {
     using VecType = VecUI16;
-    
+
     FORCE_INLINE static void Store(uint16_t* p, const VecType v) noexcept { VecStoreUI16(p, v); }
 };
 
 template <typename TIn, typename TOut, typename TOperation>
-inline void Transform(TIn* in, TOut* out, const TOperation& op, const std::size_t n) {
+inline void Transform(const TIn* RESTRICT in, TOut* RESTRICT out, const TOperation& op, const std::size_t n) {
     std::size_t i = 0;
 
 #if !defined(SIMD_SCALAR)
@@ -125,11 +130,14 @@ struct ToLinDistMap {
     const float kZFnSubF;
 
     static constexpr float kMmToMConv = 1000.0f; // conversion factor from millimeters to meters
-    
+
     ToLinDistMap(const float z_near, const float z_far);
 
     [[nodiscard]] inline uint16_t scalar(const float d) const noexcept {
-        return static_cast<uint16_t>((kZFnProdF / (kZFarF - d * kZFnSubF)) * kMmToMConv);
+        const float lin_dist = (kZFnProdF / (kZFarF - d * kZFnSubF)) * kMmToMConv;
+        const float rounded = lin_dist + 0.5f;
+        const float clamped = std::clamp(rounded, 0.0f, static_cast<float>(std::numeric_limits<uint16_t>::max()));
+        return static_cast<uint16_t>(clamped);
     }
 
 #if !defined(SIMD_SCALAR)

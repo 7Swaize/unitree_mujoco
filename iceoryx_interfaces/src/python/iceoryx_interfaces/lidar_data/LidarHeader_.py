@@ -1,6 +1,5 @@
 import ctypes
 
-
 class LidarHeader_(ctypes.Structure):
 	_fields_ = [
 		("rows", ctypes.c_int),

@@ -3,7 +3,7 @@
 #include <string_view>
 
 namespace iceoryx_interfaces::lidar {
-    inline constexpr const char* kLidarTopicName = "control/lidar_decoded";
+    inline constexpr const char* kLidarTopicName = "control/lidar";
 
     inline constexpr uint64_t kResponseAllocationInitialSizeHint = 20000;
 } // namespace iceoryx_interfaces::lidar

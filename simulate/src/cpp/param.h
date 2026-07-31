@@ -2,14 +2,13 @@
 
 #include <iostream>
 #include <boost/program_options.hpp>
-#include <yaml-cpp/yaml.h>
 #include <filesystem>
 
-namespace param
-{
+#include "utils/yaml_utils.hpp"
 
-inline struct SimulationConfig
-{
+namespace param {
+
+inline struct SimulationConfig {
     std::string robot;
     std::filesystem::path robot_scene;
 
@@ -26,29 +25,20 @@ inline struct SimulationConfig
     int enable_elastic_band;
     int band_attached_link = 0;
 
-    void load_from_yaml(const std::string& filename, const std::filesystem::path& proj_dir)
-    {
+    void load_from_yaml(const std::string& filename, const std::filesystem::path& proj_dir) {
         auto cfg = YAML::LoadFile(filename);
-        try
-        {
-            robot = cfg["robot"].as<std::string>();
-            robot_scene = proj_dir / cfg["robot_scene"].as<std::string>();
-            domain_id = cfg["domain_id"].as<int>();
-            interface = cfg["interface"].as<std::string>();
-            use_joystick = cfg["use_joystick"].as<int>();
-            joystick_type = cfg["joystick_type"].as<std::string>();
-            joystick_device = cfg["joystick_device"].as<std::string>();
-            joystick_bits = cfg["joystick_bits"].as<int>();
-            print_scene_information = cfg["print_scene_information"].as<int>();
-            enable_elastic_band = cfg["enable_elastic_band"].as<int>();
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-            exit(EXIT_FAILURE);
-        }
+        
+        robot = utils::YamlRequireField<std::string>(cfg, "robot");
+        robot_scene = proj_dir / utils::YamlRequireField<std::string>(cfg, "robot_scene");
+        domain_id = utils::YamlRequireField<int>(cfg, "domain_id");
+        interface = utils::YamlRequireField<std::string>(cfg, "interface");
+        use_joystick = utils::YamlRequireField<int>(cfg, "use_joystick");
+        joystick_type = utils::YamlRequireField<std::string>(cfg, "joystick_type");
+        joystick_device = utils::YamlRequireField<std::string>(cfg, "joystick_device");
+        joystick_bits = utils::YamlRequireField<int>(cfg, "joystick_bits");
+        print_scene_information = utils::YamlRequireField<int>(cfg, "print_scene_information");
+        enable_elastic_band = utils::YamlRequireField<int>(cfg, "enable_elastic_band");
     }
 } config;
 
-
-}
+} // namespace param

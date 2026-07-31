@@ -1,4 +1,4 @@
-from HeightmapHeader_ import HeightmapHeader_
+from .HeightmapHeader_ import HeightmapHeader_
 
 __all__ = [
     "HeightmapHeader_"

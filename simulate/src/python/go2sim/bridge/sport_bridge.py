@@ -1,4 +1,3 @@
-import time
 import sys
 import queue
 import threading
@@ -18,6 +17,7 @@ from iceoryx_interfaces.sport_cmds import (
     CommandResponse_
 )
 
+from .heightmap_receiver import HeightmapReceiver
 from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
 from ..adapters import Adapter
 from ..adapters.sport import (
@@ -31,10 +31,12 @@ from ..adapters.sport import (
 
 class SportBridge:
     def __init__(self):
-        self._iox_thread_ref: Optional[threading.Thread] = None
+        self._iox_cmd_thread_ref: Optional[threading.Thread] = None
         self._command_thread_ref: Optional[threading.Thread] = None
         self._shutdown_event: threading.Event = threading.Event()
         self._adapter_stop_event: threading.Event = threading.Event()
+
+        self._hm_receiver = HeightmapReceiver()
 
         self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
@@ -65,7 +67,7 @@ class SportBridge:
         
         self._noargs_server = self._noargs_service.server_builder().create()
         self._floatargs_server = self._floatargs_service.server_builder().create()
-        self._cycle_time = iox2.Duration.from_millis(50) # 20 Hz polling should be fine? 
+        self._cmd_cycle_time = iox2.Duration.from_millis(50) # 20 Hz polling should be fine?
 
 
     def _init_cyclonedds_services(self) -> None:
@@ -105,8 +107,10 @@ class SportBridge:
 
 
     def start(self) -> None:
-        self._iox_thread_ref = threading.Thread(target=self._iox_thread, daemon=True)
-        self._iox_thread_ref.start()
+        self._hm_receiver.start()
+        
+        self._iox_cmd_thread_ref = threading.Thread(target=self._iox_thread, daemon=True)
+        self._iox_cmd_thread_ref.start()
 
         self._command_thread_ref = threading.Thread(target=self._command_thread, daemon=True)
         self._command_thread_ref.start()
@@ -114,7 +118,7 @@ class SportBridge:
 
     def _iox_thread(self):
         while not self._shutdown_event.is_set():
-            self._node.wait(self._cycle_time)
+            self._node.wait(self._cmd_cycle_time)
 
             while True:
                 active_request = self._noargs_server.receive()
@@ -182,7 +186,11 @@ class SportBridge:
 
 
     def _handle_floatargs_cmd(self, command: SportCommand, active_request: Optional[iox2.ActiveRequest], arg1: float, arg2: float) -> None:
-        self._last_q = self._api_mappings[command].set_floatargs(arg1, arg2).execute(self._last_q, self._adapter_stop_event)
+        self._last_q = self._api_mappings[command] \
+                            .set_floatargs(arg1, arg2) \
+                            .set_heightmap_receiver(self._hm_receiver) \
+                            .execute(self._last_q, self._adapter_stop_event)
+        
         status = CommandStatus.INTERRUPTED if self._adapter_stop_event.is_set() else CommandStatus.OK
         self._respond(active_request, status)
 
@@ -212,9 +220,9 @@ class SportBridge:
     def shutdown(self) -> None:
         self._shutdown_event.set()
 
-        if self._iox_thread_ref:
-            self._iox_thread_ref.join()
-            self._iox_thread_ref = None
+        if self._iox_cmd_thread_ref:
+            self._iox_cmd_thread_ref.join()
+            self._iox_cmd_thread_ref = None
 
         if self._command_thread_ref:
             self._command_thread_ref.join()
@@ -227,3 +235,5 @@ class SportBridge:
                 self._respond(item[3], CommandStatus.CANCELLED)
             except queue.Empty:
                 break
+
+        self._hm_receiver.shutdown()

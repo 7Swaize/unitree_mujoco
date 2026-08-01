@@ -11,26 +11,22 @@
 
 class HeightmapPublisher {
 private:
-    using Payload = iox2::bb::Slice<float>;
+    using Payload = iox2::bb::StaticVector<float, HeightmapSensor::kNRays>;
     using PayloadHeader = ipc::heightmap::HeightmapHeader_;
 
 public:
     HeightmapPublisher(mjModel* model,
-                   mjData* data,
-                   const HeightmapConfig& config,
-                   mujoco::Simulate* sim,
-                   mujoco::SimulateMutex& sim_mutex)
+                       mjData* data,
+                       mujoco::Simulate* sim,
+                       mujoco::SimulateMutex& sim_mutex)
         : model_(model),
         data_(data),
-        config_(config),
         sim_(sim),
         sim_mutex_(sim_mutex),
-        sensor_(HeightmapConfig{config}),
+        sensor_(model),
         iox2_node_(ipc::MakeNode()),
         heightmap_factory_ipc_(ipc::MakePubSubService<Payload, PayloadHeader>(iox2_node_, ipc::heightmap::kHeightmapTopicName)),
-        heightmap_pub_ipc(ipc::MakePublisherDynamicData<Payload, PayloadHeader, iox2::AllocationStrategy::PowerOfTwo>(
-            heightmap_factory_ipc_, ipc::heightmap::kPublishAllocationInitialSizeHint
-        ))
+        heightmap_pub_ipc(ipc::MakePublisher<Payload, PayloadHeader>(heightmap_factory_ipc_))
     { }
 
     void Run();
@@ -41,11 +37,11 @@ private:
     mujoco::Simulate* sim_;
     mujoco::SimulateMutex& sim_mutex_;
 
-    const HeightmapConfig config_;
     HeightmapSensor sensor_;
 
-    // 5 hz
-    static constexpr float kIPCPublishNodeCycleTime = 0.20;
+    // 50 hz. This is what PGTT was trained on, so I don't want to take chances.
+    // TODO: See if this rate can be reduced
+    static constexpr float kIPCPublishNodeCycleTime = 0.02;
 
     ipc::Node iox2_node_;
     ipc::PubSubFactory<Payload, PayloadHeader> heightmap_factory_ipc_;

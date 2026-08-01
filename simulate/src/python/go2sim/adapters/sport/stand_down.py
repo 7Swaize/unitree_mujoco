@@ -9,10 +9,12 @@ from .constants import SIMULATION_DT, STAND_DOWN_JOINT_POS
 
 class StandDown(Adapter):   
     @override
-    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
+    def execute(self, cancel_event: threading.Event) -> None:
         runtime = 0.0
         duration = 3 # Actual total time for standing up or standing down is about 1.2s
-        self._last_q = start_pos.copy()
+
+        start_pos = self._policy_controller.deactivate()
+        last_q = start_pos.copy()
 
         while runtime < duration and not cancel_event.is_set():
             step_start = time.perf_counter()
@@ -27,7 +29,7 @@ class StandDown(Adapter):
                 self._lowcmd.motor_cmd[i].dq = 0.0
                 self._lowcmd.motor_cmd[i].kd = 3.5
                 self._lowcmd.motor_cmd[i].tau = 0.0
-                self._last_q[i] = target
+                last_q[i] = target
 
             self._lowcmd.crc = self._crc.Crc(self._lowcmd)
             self._lowcmd_pub.Write(self._lowcmd)
@@ -36,4 +38,4 @@ class StandDown(Adapter):
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step)
 
-        return self._last_q
+        self._policy_controller.override_joint_pos(last_q)

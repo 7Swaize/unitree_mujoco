@@ -698,7 +698,6 @@ int main(int argc, char **argv)
   }
 
   auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
-  auto heightmap_yaml_dir = proj_dir / "resources" / "config" / "heightmap.yaml";
  
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
@@ -767,12 +766,9 @@ int main(int argc, char **argv)
     while (!sim_data_ready.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    
-    HeightmapConfig heightmap_cfg{m};
-    heightmap_cfg.Load(heightmap_yaml_dir);
 
     heightmap_pub = std::make_unique<HeightmapPublisher>(
-      m, d, heightmap_cfg, sim.get(), sim->mtx
+      m, d, sim.get(), sim->mtx
     );
 
     heightmap_pub->Run();

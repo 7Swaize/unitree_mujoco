@@ -17,15 +17,13 @@ from iceoryx_interfaces.sport_cmds import (
     CommandResponse_
 )
 
-from .heightmap_receiver import HeightmapReceiver
+from ..nn import PolicyController
 from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
 from ..adapters import Adapter
 from ..adapters.sport import (
-    Stop,
     StandDown,
     StandUp,
-    Move,
-    Rotate
+    StopMove
 )
 
 
@@ -36,12 +34,9 @@ class SportBridge:
         self._shutdown_event: threading.Event = threading.Event()
         self._adapter_stop_event: threading.Event = threading.Event()
 
-        self._hm_receiver = HeightmapReceiver()
-
+        self._policy_controller: PolicyController = PolicyController()
         self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
-
-        self._last_q: np.ndarray = STAND_DOWN_JOINT_POS
         
         self._init_iox_services()
         self._init_cyclonedds_services()
@@ -78,12 +73,12 @@ class SportBridge:
 
 
     def _init_adapter_mappings(self) -> None:
+        common = dict(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd, policy_controller=self._policy_controller)
+
         self._api_mappings: Dict[SportCommand, Adapter] = {
-            SportCommand.STOP: Stop(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
-            SportCommand.STAND_UP: StandUp(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
-            SportCommand.STAND_DOWN: StandDown(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
-            SportCommand.MOVE: Move(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd),
-            SportCommand.ROTATE: Rotate(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd)
+            SportCommand.STAND_UP: StandUp(**common),
+            SportCommand.STAND_DOWN: StandDown(**common),
+            SportCommand.STOP_MOVE: StopMove(**common),
         }
 
 
@@ -107,8 +102,6 @@ class SportBridge:
 
 
     def start(self) -> None:
-        self._hm_receiver.start()
-        
         self._iox_cmd_thread_ref = threading.Thread(target=self._iox_thread, daemon=True)
         self._iox_cmd_thread_ref.start()
 
@@ -151,7 +144,7 @@ class SportBridge:
                     active_request.delete()
                     active_request = None
                     
-                self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2], active_request))
+                self._enqueue((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2, data.arg3], active_request))
 
 
     def _enqueue(self, item: tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]) -> None:
@@ -180,16 +173,22 @@ class SportBridge:
         
 
     def _handle_noargs_cmd(self, command: SportCommand, active_request: Optional[iox2.ActiveRequest]) -> None:
-        self._last_q = self._api_mappings[command].execute(self._last_q, self._adapter_stop_event)
+        self._api_mappings[command].execute(self._adapter_stop_event)
         status = CommandStatus.INTERRUPTED if self._adapter_stop_event.is_set() else CommandStatus.OK
         self._respond(active_request, status)
 
 
-    def _handle_floatargs_cmd(self, command: SportCommand, active_request: Optional[iox2.ActiveRequest], arg1: float, arg2: float) -> None:
-        self._last_q = self._api_mappings[command] \
-                            .set_floatargs(arg1, arg2) \
-                            .set_heightmap_receiver(self._hm_receiver) \
-                            .execute(self._last_q, self._adapter_stop_event)
+    def _handle_floatargs_cmd(
+        self,
+        command: SportCommand,
+        active_request: Optional[iox2.ActiveRequest],
+        arg1: float,
+        arg2: float,
+        arg3: float
+    ) -> None:
+        self._api_mappings[command] \
+            .set_floatargs(arg1, arg2, arg3) \
+            .execute(self._adapter_stop_event)
         
         status = CommandStatus.INTERRUPTED if self._adapter_stop_event.is_set() else CommandStatus.OK
         self._respond(active_request, status)
@@ -228,6 +227,8 @@ class SportBridge:
             self._command_thread_ref.join()
             self._command_thread_ref = None
 
+        self._policy_controller.shutdown()
+
         while True:
             try:
                 self._adapter_stop_event.set()
@@ -235,5 +236,3 @@ class SportBridge:
                 self._respond(item[3], CommandStatus.CANCELLED)
             except queue.Empty:
                 break
-
-        self._hm_receiver.shutdown()

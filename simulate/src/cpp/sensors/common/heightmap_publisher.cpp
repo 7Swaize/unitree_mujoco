@@ -30,14 +30,21 @@ void HeightmapPublisher::LoopInternalIPCPublish() {
 }
 
 void HeightmapPublisher::PublishHeightmap() {
-    std::span<const HeightmapPoint> view = sensor_.HeightmapView();
-    std::span<const float> view_flat{reinterpret_cast<const float*>(view.data()), view.size() * 3};
+    std::span<const float> view = sensor_.ZView();
 
-    auto sample = heightmap_pub_ipc.loan_slice_uninit(view_flat.size()).value();
-    sample.user_header_mut().grid_extent_x = config_.grid_extent_x;
-    sample.user_header_mut().grid_extent_y = config_.grid_extent_y;
+    auto sample = heightmap_pub_ipc.loan_uninit().value();
+    auto& header = sample.user_header_mut();
 
-    iox2::bb::ImmutableSlice<float> src_slice(view_flat.data(), view_flat.size());
-    auto initialized_sample = sample.write_from_slice(src_slice);
+    header.num_heightscans = HeightmapSensor::kNumHeightscans;
+    header.num_widthscans = HeightmapSensor::kNumWidthscans;
+    header.dist_x = HeightmapSensor::kDistX;
+    header.dist_y = HeightmapSensor::kDistY;
+    header.base_x = sensor_.BaseX();
+    header.base_y = sensor_.BaseY();
+    header.yaw = sensor_.Yaw();
+
+    auto initialized_sample = 
+        sample.write_payload(*iox2::bb::StaticVector<float, HeightmapSensor::kNRays>::from_range_unchecked(view));
+
     send(std::move(initialized_sample)).value();
 }

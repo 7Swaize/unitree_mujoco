@@ -16,7 +16,6 @@ public:
     static constexpr uint32_t kNRays = kNumHeightscans * kNumWidthscans;
     static constexpr float kDistX = 0.1;
     static constexpr float kDistY = 0.1;
-    static constexpr const char* kExcludeBodyStr = "base_link";
 
     explicit HeightmapSensor(const mjModel* m) : z_buffer_(kNRays) {
         exclude_body_id_ = mj_name2id(m, mjOBJ_BODY, kExcludeBodyStr);
@@ -34,6 +33,8 @@ public:
     void Scan(const mjModel* m, mjData* data);
 
 private:
+    static constexpr const char* kExcludeBodyStr = "base_link";
+    
     int exclude_body_id_;
 
     double base_x_;

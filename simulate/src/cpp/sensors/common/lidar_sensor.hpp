@@ -12,23 +12,6 @@
 #include "utils/simd.hpp"
 #include "sensors/data/generated_scan_pattern.hpp"
 
-class LidarConfig {
-public:
-    float min_range;
-    float max_range;
-    int points_per_second;
-    int site_id;
-    int exclude_body_id;
-
-    explicit LidarConfig(const mjModel* model) : model_(model) {}
-
-    void Load(const std::filesystem::path& path);
-
-private:
-    const mjModel* model_;
-};
-
-
 class LidarSensor {
 public:
     using Vec3m = Eigen::Vector<mjtNum, 3>;
@@ -36,10 +19,18 @@ public:
     using Matrix3x3RMm = Eigen::Matrix<mjtNum, 3, 3, Eigen::RowMajor>;
     using LidarScanView = Eigen::Block<const Matrix3xXm, 3, Eigen::Dynamic, true>;
 
-    explicit LidarSensor(const LidarConfig& config)
-        : config_(config),
-        points_world_(3, lidar_data::kTotalVecs),
-        world_dirs_scratch_(3, lidar_data::kTotalVecs) { }
+public:
+    static constexpr float kMinRange = 0.10;
+    static constexpr float kMaxRange = 40;
+    static constexpr float kPointsPerSecond = 200000;
+
+    explicit LidarSensor(const mjModel* m)
+        : points_world_(3, lidar_data::kTotalVecs),
+          world_dirs_scratch_(3, lidar_data::kTotalVecs)
+    {
+        site_id_ = mj_name2id(m, mjOBJ_SITE, kSiteStr);
+        exclude_body_id_ = mj_name2id(m, mjOBJ_BODY, kExcludeBodyStr);
+    }
 
     [[nodiscard]]
     FORCE_INLINE const LidarScanView LatestScan() const noexcept {
@@ -50,7 +41,11 @@ public:
 
 private:
     static constexpr float kResizeLazyMultiplier = 1.5f;
-    const LidarConfig config_;
+    static constexpr const char* kSiteStr = "mid360_lidar_site";
+    static constexpr const char* kExcludeBodyStr = "base_link";
+    
+    int site_id_;
+    int exclude_body_id_;
 
     std::size_t pattern_cursor_ = 0;
     std::vector<int> ray_geomid_scratch_;

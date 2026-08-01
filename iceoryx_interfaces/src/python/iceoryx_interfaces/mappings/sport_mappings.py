@@ -2,11 +2,13 @@ from enum import IntEnum, auto
 
 
 class SportCommand(IntEnum):
-    STOP = auto()
     STAND_UP = auto()
     STAND_DOWN = auto()
     MOVE = auto()
-    ROTATE = auto()
+    STOP_MOVE = auto()
+    DAMP = auto()
+    BALANCE_STAND = auto()
+    RECOVERY_STAND = auto()
 
 
 class CommandKind(IntEnum):

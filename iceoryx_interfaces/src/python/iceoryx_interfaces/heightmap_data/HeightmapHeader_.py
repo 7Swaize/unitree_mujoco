@@ -2,8 +2,13 @@ import ctypes
 
 class HeightmapHeader_(ctypes.Structure):
     _fields_ = [
-        ("grid_extent_x", ctypes.c_uint32),
-        ("grid_extent_y", ctypes.c_uint32)
+        ("num_heightscans", ctypes.c_uint32),
+        ("num_widthscans", ctypes.c_uint32),
+        ("dist_x", ctypes.c_float),
+        ("dist_y", ctypes.c_float),
+        ("base_x", ctypes.c_float),
+        ("base_y", ctypes.c_float),
+        ("yaw", ctypes.c_float)
     ]
 
     @staticmethod

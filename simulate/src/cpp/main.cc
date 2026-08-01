@@ -696,8 +696,6 @@ int main(int argc, char **argv)
   } else {
     std::printf("Camera configuration file not found, using defaults\n");
   }
-
-  auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
  
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
@@ -750,12 +748,9 @@ int main(int argc, char **argv)
     while (!sim_data_ready.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
- 
-    LidarConfig lidar_cfg{m};
-    lidar_cfg.Load(lidar_yaml_dir);
- 
+
     lidar_pub = std::make_unique<LidarPublisher>(
-      m, d, lidar_cfg, sim.get(), sim->mtx
+      m, d, sim.get(), sim->mtx
     );
  
     lidar_pub->Run();

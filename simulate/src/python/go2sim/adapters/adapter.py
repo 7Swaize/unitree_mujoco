@@ -1,5 +1,4 @@
 import threading
-import numpy as np
 from abc import ABC, abstractmethod
 
 from unitree_sdk2py.utils.crc import CRC

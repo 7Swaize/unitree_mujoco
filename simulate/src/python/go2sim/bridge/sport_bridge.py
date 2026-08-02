@@ -1,7 +1,6 @@
 import sys
 import queue
 import threading
-import numpy as np
 import iceoryx2 as iox2
 from typing import Dict, Any, Optional
 
@@ -21,6 +20,9 @@ from ..nn import PolicyController
 from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
 from ..adapters import Adapter
 from ..adapters.sport import (
+    BalanceStand,
+    Damp,
+    Move,
     StandDown,
     StandUp,
     StopMove
@@ -30,13 +32,15 @@ from ..adapters.sport import (
 class SportBridge:
     def __init__(self):
         self._iox_cmd_thread_ref: Optional[threading.Thread] = None
-        self._command_thread_ref: Optional[threading.Thread] = None
+        self._command_recv_thread_ref: Optional[threading.Thread] = None
         self._shutdown_event: threading.Event = threading.Event()
         self._adapter_stop_event: threading.Event = threading.Event()
 
         self._policy_controller: PolicyController = PolicyController()
         self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
+
+        self._priority_buffer_clear_cmds: tuple[SportCommand, ...] = (SportCommand.STOP_MOVE, SportCommand.DAMP)
         
         self._init_iox_services()
         self._init_cyclonedds_services()
@@ -76,6 +80,9 @@ class SportBridge:
         common = dict(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd, policy_controller=self._policy_controller)
 
         self._api_mappings: Dict[SportCommand, Adapter] = {
+            SportCommand.BALANCE_STAND: BalanceStand(**common),
+            SportCommand.DAMP: Damp(**common),
+            SportCommand.MOVE: Move(**common),
             SportCommand.STAND_UP: StandUp(**common),
             SportCommand.STAND_DOWN: StandDown(**common),
             SportCommand.STOP_MOVE: StopMove(**common),
@@ -105,8 +112,8 @@ class SportBridge:
         self._iox_cmd_thread_ref = threading.Thread(target=self._iox_thread, daemon=True)
         self._iox_cmd_thread_ref.start()
 
-        self._command_thread_ref = threading.Thread(target=self._command_thread, daemon=True)
-        self._command_thread_ref.start()
+        self._command_recv_thread_ref = threading.Thread(target=self._command_thread_recv, daemon=True)
+        self._command_recv_thread_ref.start()
 
 
     def _iox_thread(self):
@@ -125,8 +132,8 @@ class SportBridge:
                     active_request.delete()
                     active_request = None
 
-                if command == SportCommand.STOP:
-                    self._request_stop(active_request)
+                if command in self._priority_buffer_clear_cmds:
+                    self._request_cmd_buffer_clear(CommandKind.NO_ARGS, command, active_request)
                     break
 
                 self._enqueue((CommandKind.NO_ARGS, command, [], active_request))
@@ -156,7 +163,7 @@ class SportBridge:
             self._command_queue.put_nowait(item)
 
 
-    def _command_thread(self):
+    def _command_thread_recv(self):
         while not self._shutdown_event.is_set():
             try:
                 kind, command, args, active_request = self._command_queue.get(timeout=0.1)
@@ -204,7 +211,12 @@ class SportBridge:
         active_request.delete()
 
 
-    def _request_stop(self, active_request: Optional[iox2.ActiveRequest]) -> None:
+    def _request_cmd_buffer_clear(
+        self,
+        kind: CommandKind,
+        command: SportCommand,
+        active_request: Optional[iox2.ActiveRequest]
+    ) -> None:
         while True:
             try:
                 item = self._command_queue.get_nowait()
@@ -213,7 +225,7 @@ class SportBridge:
                 break
 
         self._adapter_stop_event.set()
-        self._enqueue((CommandKind.NO_ARGS, SportCommand.STOP, [], active_request))
+        self._enqueue((kind, command, [], active_request))
 
 
     def shutdown(self) -> None:
@@ -223,9 +235,9 @@ class SportBridge:
             self._iox_cmd_thread_ref.join()
             self._iox_cmd_thread_ref = None
 
-        if self._command_thread_ref:
-            self._command_thread_ref.join()
-            self._command_thread_ref = None
+        if self._command_recv_thread_ref:
+            self._command_recv_thread_ref.join()
+            self._command_recv_thread_ref = None
 
         self._policy_controller.shutdown()
 

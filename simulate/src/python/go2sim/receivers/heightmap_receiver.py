@@ -25,7 +25,7 @@ class HeightmapReceiver(threading.Thread):
         self._cycle_time = iox2.Duration.from_millis(50) # 20 hz polling
         self._shutdown_event: threading.Event = threading.Event()
 
-        self._latest_heightmap: Optional[np.ndarray] = None
+        self._latest_z_normal: Optional[np.ndarray] = None
         
 
     def run(self) -> None:
@@ -42,7 +42,7 @@ class HeightmapReceiver(threading.Thread):
                 data_ptr = ctypes.cast(sample.payload().as_ptr(), ctypes.POINTER(ctypes.c_float))
                 itemsize = np.dtype(np.float32).itemsize
 
-                self._latest_heightmap = np.ndarray(
+                self._latest_z_normal = np.ndarray(
                     shape=(extent_x, extent_y),
                     dtype=np.float32,
                     buffer=(ctypes.c_float * (extent_x * extent_y)).from_address(ctypes.addressof(data_ptr.contents)),
@@ -50,8 +50,8 @@ class HeightmapReceiver(threading.Thread):
                 ).copy(order='C')
 
 
-    def latest_heightmap(self) -> np.ndarray:
-        return self._latest_heightmap
+    def latest_z_normal(self) -> np.ndarray:
+        return self._latest_z_normal
 
 
     def shutdown(self) -> None:

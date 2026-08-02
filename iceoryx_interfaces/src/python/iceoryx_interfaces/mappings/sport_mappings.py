@@ -8,7 +8,6 @@ class SportCommand(IntEnum):
     STOP_MOVE = auto()
     DAMP = auto()
     BALANCE_STAND = auto()
-    RECOVERY_STAND = auto()
 
 
 class CommandKind(IntEnum):

@@ -3,12 +3,10 @@
 #include <mujoco/mujoco.h>
 #include "simulate.h"
 
-#include <filesystem>
 #include <vector>
 #include <Eigen/Core>
 
 #include "utils/container_utils.hpp"
-#include "utils/yaml_utils.hpp"
 #include "utils/simd.hpp"
 #include "sensors/data/generated_scan_pattern.hpp"
 
@@ -20,10 +18,6 @@ public:
     using LidarScanView = Eigen::Block<const Matrix3xXm, 3, Eigen::Dynamic, true>;
 
 public:
-    static constexpr float kMinRange = 0.10;
-    static constexpr float kMaxRange = 40;
-    static constexpr float kPointsPerSecond = 200000;
-
     explicit LidarSensor(const mjModel* m)
         : points_world_(3, lidar_data::kTotalVecs),
           world_dirs_scratch_(3, lidar_data::kTotalVecs)
@@ -41,6 +35,9 @@ public:
 
 private:
     static constexpr float kResizeLazyMultiplier = 1.5f;
+    static constexpr float kMinRange = 0.10;
+    static constexpr float kMaxRange = 40;
+    static constexpr float kPointsPerSecond = 200000;
     static constexpr const char* kSiteStr = "mid360_lidar_site";
     static constexpr const char* kExcludeBodyStr = "base_link";
     

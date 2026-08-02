@@ -2,26 +2,13 @@
 
 using namespace ipc::camera;
 
-void CameraConfig::Load(const std::filesystem::path& path) {
-    YAML::Node cfg = YAML::LoadFile(path.string());
-
-    far_clip = utils::YamlRequireField<float>(cfg, "far_clip");
-    near_clip = utils::YamlRequireField<float>(cfg, "near_clip");
-    publish_fps = utils::YamlRequireField<int>(cfg, "publish_fps");
-
-    utils::YamlRequireLess(near_clip, far_clip, "near_clip", "far_clip");
-    utils::YamlRequirePositive(publish_fps, "publish_fps");
-}
-
 CameraPublisher::CameraPublisher(mjModel* model,
                                  mjData* data,
                                  GLFWwindow* share_window,
-                                 const CameraConfig& cam_cfg,
                                  mujoco::Simulate* sim,
                                  mujoco::SimulateMutex& sim_mutex)
     : model_(model),
     data_(data),
-    cfg_(cam_cfg),
     sim_(sim),
     sim_mutex_(sim_mutex),
     iox2_node_(ipc::MakeNode()),
@@ -52,8 +39,8 @@ void CameraPublisher::PublishFrames(unsigned char* rgb_data, uint16_t* depth_dat
 
     auto& payload = sample.payload_mut();
 
-    payload.depth_min = cfg_.near_clip;
-    payload.depth_max = cfg_.far_clip;
+    payload.depth_min = kNearClip;
+    payload.depth_max = kFarClip;
 
     std::memcpy(payload.rgb_data, reinterpret_cast<uint8_t*>(rgb_data), kRgbBufferElementCount * sizeof(uint8_t));
     std::memcpy(payload.depth_data, depth_data, kDepthBufferElementCount * sizeof(uint16_t));
@@ -105,8 +92,8 @@ void CameraPublisher::GLFWRenderHandler::RenderLoop() {
     cam.fixedcamid = mj_name2id(outer_->model_, mjOBJ_CAMERA, "Internal Camera");
 
     // Note: This changes clipping for all cameras. Consider using per-camera clipping if available.
-    outer_->model_->vis.map.znear = outer_->cfg_.near_clip;
-    outer_->model_->vis.map.zfar = outer_->cfg_.far_clip;
+    outer_->model_->vis.map.znear = CameraPublisher::kNearClip;
+    outer_->model_->vis.map.zfar = CameraPublisher::kFarClip;
 
     mjrRect viewport = {0, 0, kFrameWidth, kFrameHeight};
 
@@ -119,7 +106,7 @@ void CameraPublisher::GLFWRenderHandler::RenderLoop() {
         assert(utils::IsAligned(reinterpret_cast<std::size_t>(depth_buf_ret.data()), SIMD_ALIGNMENT));
     }
 
-    auto frame_duration = std::chrono::duration<double>(1.0 / outer_->cfg_.publish_fps);
+    auto frame_duration = std::chrono::duration<double>(1.0 / CameraPublisher::kPublishFps);
     auto next_time = std::chrono::steady_clock::now();
 
     while (!outer_->sim_->exitrequest.load(std::memory_order_acquire)) {
@@ -151,5 +138,5 @@ void CameraPublisher::GLFWRenderHandler::DepthTransformHyperbolicToLinear(float*
     // - https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer
     // - SIMD optimization: https://stackoverflow.com/questions/66260651/mm256-fmadd-ps-is-slower
 
-    simd::Transform(in, out, simd::operations::ToLinDistMap{outer_->cfg_.near_clip, outer_->cfg_.far_clip}, size);
+    simd::Transform(in, out, simd::operations::ToLinDistMap{CameraPublisher::kNearClip, CameraPublisher::kFarClip}, size);
 }

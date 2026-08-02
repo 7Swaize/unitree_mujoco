@@ -687,16 +687,7 @@ int main(int argc, char **argv)
   // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
   param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml", proj_dir);
- 
-  // load camera configuration
-  CameraConfig cam_cfg;
-  auto cam_yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
-  if (std::filesystem::exists(cam_yaml_dir)) {
-    cam_cfg.Load(cam_yaml_dir);
-  } else {
-    std::printf("Camera configuration file not found, using defaults\n");
-  }
- 
+  
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
     std::make_unique<mj::GlfwAdapter>(),
@@ -737,7 +728,7 @@ int main(int argc, char **argv)
     }
  
     camera_pub = std::make_unique<CameraPublisher>(
-      m, d, main_window, cam_cfg, sim.get(), sim->mtx
+      m, d, main_window, sim.get(), sim->mtx
     );
  
     camera_pub->Run();

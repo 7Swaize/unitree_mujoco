@@ -43,8 +43,11 @@ void HeightmapPublisher::PublishHeightmap() {
     header.base_y = sensor_.BaseY();
     header.yaw = sensor_.Yaw();
 
-    auto initialized_sample = 
-        sample.write_payload(*iox2::bb::StaticVector<float, HeightmapSensor::kNRays>::from_range_unchecked(view));
+    new (&sample.payload_mut()) HeightmapPublisher::Payload;
+    auto& payload = sample.payload_mut();
+
+    std::memcpy(payload.data, view.data(), HeightmapSensor::kNRays * sizeof(float));
+    auto initialized_sample = assume_init(std::move(sample));
 
     send(std::move(initialized_sample)).value();
 }

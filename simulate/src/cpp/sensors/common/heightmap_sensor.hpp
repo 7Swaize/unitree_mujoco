@@ -18,7 +18,7 @@ public:
     static constexpr float kDistY = 0.1;
 
     explicit HeightmapSensor(const mjModel* m) : z_buffer_(kNRays) {
-        exclude_body_id_ = mj_name2id(m, mjOBJ_BODY, kExcludeBodyStr);
+        base_body_id_ = mj_name2id(m, mjOBJ_BODY, kBaseBodyStr);
     }
 
     [[nodiscard]]
@@ -33,9 +33,10 @@ public:
     void Scan(const mjModel* m, mjData* data);
 
 private:
-    static constexpr const char* kExcludeBodyStr = "base_link";
+    static constexpr const char* kBaseBodyStr = "base_link";
+    static constexpr std::array<mjtByte, mjNGROUP> kGeomGroupMask = {1, 1, 0, 0, 1, 1};
     
-    int exclude_body_id_;
+    int base_body_id_;
 
     double base_x_;
     double base_y_;

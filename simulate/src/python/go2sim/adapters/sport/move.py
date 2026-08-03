@@ -12,10 +12,11 @@ class Move(Adapter):
         self._vyaw = 0.0
 
     @override
-    def set_floatargs(self, arg1: float, arg2: float, arg3: float) -> None:
+    def set_floatargs(self, arg1: float, arg2: float, arg3: float) -> "Adapter":
         self._vx = arg1
         self._vy = arg2
         self._vyaw = arg3
+        return self
 
     @override
     def execute(self, cancel_event: threading.Event) -> None:

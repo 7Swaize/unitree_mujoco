@@ -23,7 +23,6 @@ public:
           world_dirs_scratch_(3, lidar_data::kTotalVecs)
     {
         site_id_ = mj_name2id(m, mjOBJ_SITE, kSiteStr);
-        exclude_body_id_ = mj_name2id(m, mjOBJ_BODY, kExcludeBodyStr);
     }
 
     [[nodiscard]]
@@ -39,10 +38,9 @@ private:
     static constexpr float kMaxRange = 40;
     static constexpr float kPointsPerSecond = 200000;
     static constexpr const char* kSiteStr = "mid360_lidar_site";
-    static constexpr const char* kExcludeBodyStr = "base_link";
+    static constexpr std::array<mjtByte, mjNGROUP> kGeomGroupMask = {1, 1, 0, 0, 1, 1};
     
     int site_id_;
-    int exclude_body_id_;
 
     std::size_t pattern_cursor_ = 0;
     std::vector<int> ray_geomid_scratch_;

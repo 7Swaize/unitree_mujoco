@@ -4,23 +4,25 @@ import numpy as np
 from typing_extensions import override
 
 from ..adapter import Adapter
-from .constants import SIMULATION_DT, STAND_UP_JOINT_POS
+from .constants import SIMULATION_DT, TRANSITION_TAU
+
+STAND_UP_DURATION = 3
+STAND_UP_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)  # From PGTT
 
 
 class StandUp(Adapter):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
         runtime = 0.0
-        duration = 3 # Actual total time for standing up or standing down is about 1.2s
 
         start_pos = self._policy_controller.deactivate()
         last_q = start_pos.copy()
 
-        while runtime < duration and not cancel_event.is_set():
+        while runtime < STAND_UP_DURATION and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 
-            phase = np.tanh(runtime / 1.2)
+            phase = np.tanh(runtime / TRANSITION_TAU)
 
             for i in range(12):
                 target = phase * STAND_UP_JOINT_POS[i] + (1 - phase) * start_pos[i]

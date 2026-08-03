@@ -4,6 +4,7 @@
 #include "camera_data/FrameData_.hpp"
 #include "lidar_data/LidarHeader_.hpp"
 #include "heightmap_data/HeightmapHeader_.hpp"
+#include "heightmap_data/HeightmapData_.hpp"
 #include "qos/camera_qos.hpp"
 #include "qos/lidar_qos.hpp"
 #include "qos/heightmap_qos.hpp"
@@ -64,7 +65,6 @@ namespace ipc {
     }
 
 
-
     template <typename TRequest, typename TResponse, typename TRequestHeader = void, typename TResponseHeader = void>
     using RRFactory =
         iox2::PortFactoryRequestResponse<iox2::ServiceType::Ipc, TRequest, TRequestHeader, TResponse, TResponseHeader>;
@@ -72,7 +72,6 @@ namespace ipc {
     template <typename TRequest, typename TResponse, typename TRequestHeader = void, typename TResponseHeader = void>
     using RRServer =
         iox2::Server<iox2::ServiceType::Ipc, TRequest, TRequestHeader, TResponse, TResponseHeader>;
-
 
     template <typename TRequest, typename TResponse, typename TRequestHeader = void, typename TResponseHeader = void>
     [[nodiscard]]
@@ -95,7 +94,7 @@ namespace ipc {
             } else {
                 return std::forward<B>(b);
             }
-        }(std::move(builder));
+        }(std::move(with_req_header));
 
         return std::move(with_resp_header).open_or_create().value();
     }

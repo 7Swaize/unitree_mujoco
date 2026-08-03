@@ -5,13 +5,14 @@
 
 #include <thread>
 #include <typeinfo>
+#include <cassert>
 
 #include "sensors/common/heightmap_sensor.hpp"
 #include "utils/ipc.hpp"
 
 class HeightmapPublisher {
 private:
-    using Payload = iox2::bb::StaticVector<float, HeightmapSensor::kNRays>;
+    using Payload = ipc::heightmap::HeightmapData_;
     using PayloadHeader = ipc::heightmap::HeightmapHeader_;
 
 public:

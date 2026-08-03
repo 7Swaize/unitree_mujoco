@@ -2,14 +2,19 @@ import time
 import threading
 import numpy as np
 
-from unitree_sdk2py.utils.crc import CRC, LowCmd_
+from pathlib import Path
+from unitree_sdk2py.utils.crc import CRC
+from unitree_sdk2py.core.channel import ChannelPublisher
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
 
 from ..receivers import HeightmapReceiver, RobotStateReceiver
 from .policy_net import MLP
 
-NPZ_POLICY_PATH: str = "policies_npz/policy_go2_pgtt_level13_run1.npz"
+NPZ_POLICY_PATH: Path = Path(
+    Path(__file__).parent / "policies_npz" / "policy_go2_pgtt_level13_run1.npz"
+).resolve()
 
-PGTT_DEFAULT_JOINT_POS: np.ndarray = np.tile(np.array([0.0, 0.9, -1.8]), 4)
+PGTT_DEFAULT_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)
 MOVE_COMMAND_MIN = np.array([-1.5, -0.8, -1.2])
 MOVE_COMMAND_MAX = np.array([1.5, 0.8, 1.2])
 
@@ -23,11 +28,15 @@ ACTION_SCALE = 0.5
 
 MOVE_COMMAND_TIMEOUT_S = 1.0
 
+DEFAULT_GAIT_FREQ_HZ = 2.0
+
 
 class PolicyController:
-    def __init__(self, crc: CRC, low_cmd: LowCmd_) -> None:
+    def __init__(self, crc: CRC, low_cmd: LowCmd_, lowcmd_pub: ChannelPublisher) -> None:
         self._crc: CRC = crc
-        self._low_cmd: LowCmd_ = low_cmd
+        self._lowcmd: LowCmd_ = low_cmd
+        self._lowcmd_pub = lowcmd_pub
+        self._gait_freq_hz = DEFAULT_GAIT_FREQ_HZ
 
         self._nn: MLP = MLP(NPZ_POLICY_PATH)
         self._heightmap_receiver: HeightmapReceiver = HeightmapReceiver()
@@ -107,7 +116,7 @@ class PolicyController:
         if not self._robotstate_receiver.ready:
             return
 
-        state = self._robot_state.snapshot()
+        state = self._robotstate_receiver.snapshot()
         phase = self._phase.step(self._gait_freq_hz, POLICY_CTRL_DT)
         phase_feat = self._phase.cos_sin()
 

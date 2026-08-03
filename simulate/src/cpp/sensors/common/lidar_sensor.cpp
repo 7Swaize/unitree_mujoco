@@ -18,7 +18,7 @@ void LidarSensor::Scan(const mjModel* m, mjData* d, const double dt) {
     utils::ResizeLazy(ray_dist_scratch_, n_rays * kResizeLazyMultiplier);
 
     mj_multiRay(m, d, origin.data(), world.data(),
-                /*geomgroup=*/ nullptr, /*flg_static=*/ 1, exclude_body_id_,
+                kGeomGroupMask.data(), 1, -1,
                 ray_geomid_scratch_.data(), ray_dist_scratch_.data(), n_rays, kMaxRange);
 
     std::size_t j = 0;

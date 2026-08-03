@@ -17,7 +17,7 @@ from iceoryx_interfaces.sport_cmds import (
 )
 
 from ..nn import PolicyController
-from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC, STAND_DOWN_JOINT_POS
+from ..adapters.sport.constants import DDS_LOW_CMD_TOPIC
 from ..adapters import Adapter
 from ..adapters.sport import (
     BalanceStand,
@@ -36,7 +36,6 @@ class SportBridge:
         self._shutdown_event: threading.Event = threading.Event()
         self._adapter_stop_event: threading.Event = threading.Event()
 
-        self._policy_controller: PolicyController = PolicyController()
         self._command_queue: queue.Queue[tuple[CommandKind, SportCommand, list[Any], Optional[iox2.ActiveRequest]]] = queue.Queue(maxsize=3)
         self._crc = CRC()
 
@@ -45,6 +44,7 @@ class SportBridge:
         self._init_iox_services()
         self._init_cyclonedds_services()
         self._init_publishers()
+        self._init_policy()
         self._init_adapter_mappings()
 
 
@@ -76,19 +76,6 @@ class SportBridge:
             ChannelFactoryInitialize(0, sys.argv[1])
 
 
-    def _init_adapter_mappings(self) -> None:
-        common = dict(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd, policy_controller=self._policy_controller)
-
-        self._api_mappings: Dict[SportCommand, Adapter] = {
-            SportCommand.BALANCE_STAND: BalanceStand(**common),
-            SportCommand.DAMP: Damp(**common),
-            SportCommand.MOVE: Move(**common),
-            SportCommand.STAND_UP: StandUp(**common),
-            SportCommand.STAND_DOWN: StandDown(**common),
-            SportCommand.STOP_MOVE: StopMove(**common),
-        }
-
-
     def _init_publishers(self) -> None:
         self._lowcmd_pub = ChannelPublisher(DDS_LOW_CMD_TOPIC, LowCmd_)
         self._lowcmd_pub.Init()
@@ -106,6 +93,21 @@ class SportBridge:
             self._lowcmd.motor_cmd[i].dq = 0.0
             self._lowcmd.motor_cmd[i].kd = 0.0
             self._lowcmd.motor_cmd[i].tau = 0.0
+
+    def _init_policy(self) -> None:
+        self._policy_controller: PolicyController = PolicyController(crc=self._crc, low_cmd=self._lowcmd, lowcmd_pub=self._lowcmd_pub)
+
+    def _init_adapter_mappings(self) -> None:
+        common = dict(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd, policy_controller=self._policy_controller)
+
+        self._api_mappings: Dict[SportCommand, Adapter] = {
+            SportCommand.BALANCE_STAND: BalanceStand(**common),
+            SportCommand.DAMP: Damp(**common),
+            SportCommand.MOVE: Move(**common),
+            SportCommand.STAND_UP: StandUp(**common),
+            SportCommand.STAND_DOWN: StandDown(**common),
+            SportCommand.STOP_MOVE: StopMove(**common),
+        }
 
 
     def start(self) -> None:

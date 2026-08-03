@@ -4,8 +4,7 @@ import numpy as np
 
 from pathlib import Path
 
-
-DST_NPZ_PATH_ABS: Path = Path(Path(__file__).resolve().parent.parent / "policies_npz").resolve()
+DST_NPZ_PATH_ABS: Path = Path(Path(__file__).resolve().parent / "policies_npz").resolve()
 
 def convert(src_pickle_path_abs: str) -> None:
     with open(src_pickle_path_abs, "rb") as f:

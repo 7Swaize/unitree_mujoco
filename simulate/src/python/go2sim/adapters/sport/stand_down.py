@@ -4,23 +4,28 @@ import numpy as np
 from typing_extensions import override
 
 from ..adapter import Adapter
-from .constants import SIMULATION_DT, STAND_DOWN_JOINT_POS
+from .constants import SIMULATION_DT, TRANSITION_TAU
+
+STAND_DOWN_DURATION = 3
+STAND_DOWN_JOINT_POS = np.array([
+                        0.0473455, 1.22187, -2.44375, -0.0473455, 1.22187, -2.44375,
+                        0.0473455, 1.22187, -2.44375, -0.0473455, 1.22187, -2.44375
+                    ], dtype=float)
 
 
-class StandDown(Adapter):   
+class StandDown(Adapter):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
         runtime = 0.0
-        duration = 3 # Actual total time for standing up or standing down is about 1.2s
 
         start_pos = self._policy_controller.deactivate()
         last_q = start_pos.copy()
 
-        while runtime < duration and not cancel_event.is_set():
+        while runtime < STAND_DOWN_DURATION and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 
-            phase = np.tanh(runtime / 1.2)
+            phase = np.tanh(runtime / TRANSITION_TAU)
 
             for i in range(12):
                 target = phase * STAND_DOWN_JOINT_POS[i] + (1 - phase) * start_pos[i]

@@ -137,7 +137,7 @@ class PolicyController:
             np.array([self._gait_freq_hz], dtype=np.float32),
             self._last_action,
             self._mv_command,
-        ]).astype(np.float32)
+        ], dtype=np.float32)
 
         action = self._nn(obs)
         self._last_action[:] = action
@@ -164,4 +164,7 @@ class GaitPhase:
         return self._phase
 
     def cos_sin(self) -> np.ndarray:
-        return np.concatenate([np.cos(self._phase), np.sin(self._phase)]).astype(np.float32)
+        return np.concatenate(
+            [np.cos(self._phase), np.sin(self._phase)],
+            dtype=np.float32
+        )

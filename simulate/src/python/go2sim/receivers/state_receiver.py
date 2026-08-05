@@ -30,7 +30,7 @@ class RobotStateReceiver:
             q = self._q.copy()
             dq = self._dq.copy()
             w, x, y, z = self._quat
-            gyro = self._gyro.copy().astype(np.float32)
+            gyro = self._gyro.copy().astype(np.float32, copy=False)
 
         gravity, yaw = self._quat_to_gravity_and_yaw(w, x, y, z)
         return {
@@ -65,7 +65,7 @@ class RobotStateReceiver:
         gravity_body = R.T @ np.array([0.0, 0.0, -1.0])
 
         yaw = np.arctan2(R[1, 0], R[0, 0])
-        return gravity_body.astype(np.float32), float(yaw)
+        return gravity_body.astype(np.float32, copy=False), float(yaw)
     
 
     def shutdown(self) -> None:

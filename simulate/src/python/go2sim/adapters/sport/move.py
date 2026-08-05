@@ -20,6 +20,6 @@ class Move(Adapter):
 
     @override
     def execute(self, cancel_event: threading.Event) -> None:
-        self._policy_controller.set_move_cmd(self._vx, self._vy, self._vy)
+        self._policy_controller.set_move_cmd(self._vx, self._vy, self._vyaw)
         self._policy_controller.activate()
         cancel_event.wait(timeout=0.05)

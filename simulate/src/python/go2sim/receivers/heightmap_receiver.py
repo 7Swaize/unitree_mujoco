@@ -2,10 +2,10 @@ import threading
 import numpy as np
 import iceoryx2 as iox2
 
-from typing import Optional
 from iceoryx_interfaces.qos import HeightmapQoS
 from iceoryx_interfaces.heightmap_data import HeightmapHeader_, HeightmapData_
 
+DATA_BUFFER_ELEMENTS_DEFAULT = np.zeros(99)
 
 class HeightmapReceiver(threading.Thread):
     def __init__(self) -> None:
@@ -24,7 +24,7 @@ class HeightmapReceiver(threading.Thread):
         self._cycle_time = iox2.Duration.from_millis(50) # 20 hz polling
         self._shutdown_event: threading.Event = threading.Event()
 
-        self._latest_z_normal: Optional[np.ndarray] = None    
+        self._latest_z_normal: np.ndarray = DATA_BUFFER_ELEMENTS_DEFAULT
 
     def run(self) -> None:
         while not self._shutdown_event.is_set():
@@ -38,7 +38,8 @@ class HeightmapReceiver(threading.Thread):
                 self._latest_z_normal = np.asarray(sample.payload().contents.data, dtype=np.float32)
 
     def latest_z_normal(self) -> np.ndarray:
-        return self._latest_z_normal
+        z = self._latest_z_normal
+        return z - z.min()
 
     def shutdown(self) -> None:
         self._shutdown_event.set()

@@ -38,7 +38,7 @@ private:
     static constexpr int kPublishFps = 60;
     static constexpr int kResX = 620;
     static constexpr int kResY = 480;
-    static constexpr float kFarClip = 10.0f;
+    static constexpr float kFarClip = 30.0f;
     static constexpr float kNearClip = 0.1f;
 
     mjModel* model_;

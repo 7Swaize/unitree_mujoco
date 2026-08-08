@@ -15,15 +15,14 @@ NPZ_POLICY_PATH: Path = Path(
 ).resolve()
 
 PGTT_DEFAULT_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)
-MOVE_COMMAND_MIN = np.array([-1.5, -0.8, -1.2])
-MOVE_COMMAND_MAX = np.array([1.5, 0.8, 1.2])
+CMD_SCALE = np.array([0.5, 0.5, 0.8], dtype=np.float32)
 
 POLICY_PD_DT = 0.005 # 200 Hz
 POLICY_CTRL_DT = 0.02 # 50 Hz
 POLICY_DECIMATION = round(POLICY_CTRL_DT / POLICY_PD_DT)
 
-POLICY_KP = 40.0
-POLICY_KD = 0.5
+POLICY_KP = 60.0
+POLICY_KD = 3.0
 ACTION_SCALE = 0.5
 
 MOVE_COMMAND_TIMEOUT_S = 1.0
@@ -75,8 +74,8 @@ class PolicyController:
         self._last_q = new_pos
 
     def set_move_cmd(self, vx: float, vy: float, vyaw: float) -> None:
-        cmd = np.clip(np.array([vx, vy, vyaw], dtype=np.float32), MOVE_COMMAND_MIN, MOVE_COMMAND_MAX)
-        self._mv_command[:] = cmd
+        cmd = np.array([vx, vy, vyaw], dtype=np.float32) * CMD_SCALE
+        self._mv_command[:] = np.clip(cmd, -CMD_SCALE, CMD_SCALE)
         self._mv_command_ts = time.monotonic()
 
     def _run(self) -> None:

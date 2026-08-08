@@ -5,8 +5,8 @@
 
   <default>
     <default class="go2">
-      <geom friction="0.4" margin="0.001" condim="1"/>
-      <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
+      <geom friction="0.6" margin="0.001" condim="1"/>
+      <joint axis="0 1 0" damping="2" armature="0.01" frictionloss="0.2"/>
       <motor ctrlrange="-23.7 23.7"/>
       <default class="abduction">
         <joint axis="1 0 0" range="-1.0472 1.0472"/>
@@ -29,8 +29,8 @@
       <default class="collision">
         <geom group="3"/>
         <default class="foot">
-          <geom size="0.022" pos="-0.002 0 -0.213" priority="1" condim="6"
-            friction="0.4 0.02 0.01"/>
+          <geom size="0.022" pos="-0.002 0 -0.213" priority="1" solimp="0.015 1 0.022" condim="6"
+            friction="0.8 0.02 0.01"/>
         </default>
       </default>
     </default>
@@ -286,6 +286,12 @@
 
   <keyframe>
     <key name="home" qpos="0 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
-      ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8" />
+      ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+    <key name="sit" qpos="0 0 0.10 1 0 0 0
+      0.0473455 1.22187 -2.44375
+      -0.0473455 1.22187 -2.44375
+      0.0473455 1.22187 -2.44375
+      -0.0473455 1.22187 -2.44375"
+      ctrl="0.0473455 1.22187 -2.44375 -0.0473455 1.22187 -2.44375 0.0473455 1.22187 -2.44375 -0.0473455 1.22187 -2.44375"/>
   </keyframe>
 </mujoco>

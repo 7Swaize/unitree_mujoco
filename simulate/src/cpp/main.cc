@@ -562,6 +562,11 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
       d = mj_makeData(m);
     if (d)
     {
+      int sit_key = mj_name2id(m, mjOBJ_KEY, "sit");
+      if (sit_key >= 0) {
+        mj_resetDataKeyframe(m, d, sit_key);
+      }
+      
       sim->Load(m, d, filename);
       mj_forward(m, d);
 

@@ -16,13 +16,14 @@ NPZ_POLICY_PATH: Path = Path(
 
 PGTT_DEFAULT_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)
 CMD_SCALE = np.array([0.5, 0.5, 0.8], dtype=np.float32)
+COMMAND_LIMITS = np.array([1.5, 0.8, 1.2], dtype=np.float32)
 
 POLICY_PD_DT = 0.005 # 200 Hz
 POLICY_CTRL_DT = 0.02 # 50 Hz
 POLICY_DECIMATION = round(POLICY_CTRL_DT / POLICY_PD_DT)
 
-POLICY_KP = 60.0
-POLICY_KD = 3.0
+POLICY_KP = 40.0
+POLICY_KD = 0.5
 ACTION_SCALE = 0.5
 
 MOVE_COMMAND_TIMEOUT_S = 1.0

@@ -39,7 +39,7 @@ class HeightmapReceiver(threading.Thread):
 
     def latest_z_normal(self) -> np.ndarray:
         z = self._latest_z_normal
-        return z - z.min()
+        return (z - z.min()) * 1.5
 
     def shutdown(self) -> None:
         self._shutdown_event.set()

@@ -167,6 +167,10 @@ else()
       -ffast-math
       -DNDEBUG
       -fPIC
+      -flto
+    )
+    target_link_options(go2sim_cpp PRIVATE
+      -flto
     )
   endif()
 endif()

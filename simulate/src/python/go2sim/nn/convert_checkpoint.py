@@ -4,6 +4,8 @@ import numpy as np
 
 from pathlib import Path
 
+# This removes the runtime JAX dep
+
 DST_NPZ_PATH_ABS: Path = Path(Path(__file__).resolve().parent / "policies_npz").resolve()
 
 def convert(src_pickle_path_abs: str) -> None:

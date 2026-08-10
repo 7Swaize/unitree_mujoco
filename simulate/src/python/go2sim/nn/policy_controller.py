@@ -25,9 +25,18 @@ POLICY_KP = 40.0
 POLICY_KD = 0.5
 ACTION_SCALE = 0.5
 
-MOVE_COMMAND_TIMEOUT_S = 1.0
+MOVE_COMMAND_TIMEOUT_S = 1
 
 DEFAULT_GAIT_FREQ_HZ = 2.0
+
+# We don't keep the gait warm always (b/c of the deactivate).
+# Therefore, we need to do a colde start after activate() call.
+COLD_START_RAMP_CYCLES = 1.0
+
+# Unitree publishes messages ordered [FR, FL, RR, RL].
+# The model was trained on [FL, FR, RL, RR].
+# So we need to convert when passing data into our policy.
+HW_TO_TRAIN_JOINT_ORDER = np.array([3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8])
 
 
 class PolicyController:
@@ -49,6 +58,9 @@ class PolicyController:
         self._mv_command_ts: float = 0.0
         self._pd_counter: int = 0
 
+        self._cold_start_ts: float = 0.0
+        self._cold_start_ramp_s: float = COLD_START_RAMP_CYCLES / DEFAULT_GAIT_FREQ_HZ
+
         self._continue: threading.Event = threading.Event()
         self._shutdown: threading.Event = threading.Event()
         self._thread_ref: threading.Thread = threading.Thread(target=self._run, daemon=True)
@@ -60,6 +72,12 @@ class PolicyController:
         if not self._continue.is_set():
             self._last_action[:] = 0.0
             self._phase.reset()
+            self._cold_start_ts = time.monotonic()
+            self._cold_start_ramp_s = (
+                COLD_START_RAMP_CYCLES / self._gait_freq_hz
+                if self._gait_freq_hz > 0.0
+                else 0.0
+            )
             self._continue.set()
 
     def deactivate(self) -> np.ndarray:
@@ -77,6 +95,18 @@ class PolicyController:
         cmd = np.array([vx, vy, vyaw], dtype=np.float32) * CMD_SCALE
         self._mv_command[:] = np.clip(cmd, -CMD_SCALE, CMD_SCALE)
         self._mv_command_ts = time.monotonic()
+
+    def _cold_start_scale(self) -> float:
+        if self._cold_start_ramp_s <= 0.0:
+            return 1.0
+
+        elapsed = time.monotonic() - self._cold_start_ts
+        if elapsed >= self._cold_start_ramp_s:
+            return 1.0
+        if elapsed <= 0.0:
+            return 0.0
+
+        return 0.5 * (1.0 - np.cos(np.pi * elapsed / self._cold_start_ramp_s))
 
     def _run(self) -> None:
         next_tick = time.perf_counter()
@@ -119,12 +149,17 @@ class PolicyController:
         phase = self._phase.step(self._gait_freq_hz, POLICY_CTRL_DT)
         phase_feat = self._phase.cos_sin()
 
-        joint_angles = state["q"] - PGTT_DEFAULT_JOINT_POS
-        joint_velocities = state["dq"]
+        q_train_order = state["q"][HW_TO_TRAIN_JOINT_ORDER]
+        dq_train_order = state["dq"][HW_TO_TRAIN_JOINT_ORDER]
+
+        joint_angles = q_train_order - PGTT_DEFAULT_JOINT_POS
+        joint_velocities = dq_train_order
         z_normal = self._heightmap_receiver.latest_z_normal()
 
         if time.monotonic() - self._mv_command_ts > MOVE_COMMAND_TIMEOUT_S:
             self._mv_command[:] = 0.0
+
+        eased_mv_command = self._mv_command * self._cold_start_scale()
 
         obs = np.concatenate([
             state["gyro"],
@@ -135,7 +170,7 @@ class PolicyController:
             z_normal,
             np.array([self._gait_freq_hz], dtype=np.float32),
             self._last_action,
-            self._mv_command,
+            eased_mv_command,
         ], dtype=np.float32)
 
         action = self._nn(obs)

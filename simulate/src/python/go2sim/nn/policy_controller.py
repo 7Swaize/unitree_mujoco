@@ -61,6 +61,7 @@ class PolicyController:
         self._cold_start_ts: float = 0.0
         self._cold_start_ramp_s: float = COLD_START_RAMP_CYCLES / DEFAULT_GAIT_FREQ_HZ
 
+        self._set_mv_cmd_lock: threading.Lock = threading.Lock()
         self._continue: threading.Event = threading.Event()
         self._shutdown: threading.Event = threading.Event()
         self._thread_ref: threading.Thread = threading.Thread(target=self._run, daemon=True)
@@ -93,8 +94,9 @@ class PolicyController:
 
     def set_move_cmd(self, vx: float, vy: float, vyaw: float) -> None:
         cmd = np.array([vx, vy, vyaw], dtype=np.float32) * CMD_SCALE
-        self._mv_command[:] = np.clip(cmd, -CMD_SCALE, CMD_SCALE)
-        self._mv_command_ts = time.monotonic()
+        with self._set_mv_cmd_lock:
+            self._mv_command[:] = np.clip(cmd, -CMD_SCALE, CMD_SCALE)
+            self._mv_command_ts = time.monotonic()
 
     def _cold_start_scale(self) -> float:
         if self._cold_start_ramp_s <= 0.0:
@@ -156,22 +158,23 @@ class PolicyController:
         joint_velocities = dq_train_order
         z_normal = self._heightmap_receiver.latest_z_normal()
 
-        if time.monotonic() - self._mv_command_ts > MOVE_COMMAND_TIMEOUT_S:
-            self._mv_command[:] = 0.0
+        with self._set_mv_cmd_lock:
+            if time.monotonic() - self._mv_command_ts > MOVE_COMMAND_TIMEOUT_S:
+                self._mv_command[:] = 0.0
 
-        eased_mv_command = self._mv_command * self._cold_start_scale()
+            eased_mv_command = self._mv_command * self._cold_start_scale()
 
-        obs = np.concatenate([
-            state["gyro"],
-            state["gravity"],
-            joint_angles,
-            joint_velocities,
-            phase_feat,
-            z_normal,
-            np.array([self._gait_freq_hz], dtype=np.float32),
-            self._last_action,
-            eased_mv_command,
-        ], dtype=np.float32)
+            obs = np.concatenate([
+                state["gyro"],
+                state["gravity"],
+                joint_angles,
+                joint_velocities,
+                phase_feat,
+                z_normal,
+                np.array([self._gait_freq_hz], dtype=np.float32),
+                self._last_action,
+                eased_mv_command,
+            ], dtype=np.float32)
 
         action = self._nn(obs)
         self._last_action[:] = action

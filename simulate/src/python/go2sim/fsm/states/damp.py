@@ -2,14 +2,14 @@ import time
 import threading
 from typing_extensions import override
 
-from ..adapter import Adapter
+from .state import State
 from .constants import SIMULATION_DT
 
 DAMP_KD = 3.0
 DAMP_DURATION = 0.5
 
 
-class Damp(Adapter):
+class Damp(State):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
         start_pos = self._policy_controller.deactivate()

@@ -1,10 +1,12 @@
+import time
 import threading
+import numpy as np
 from typing_extensions import override
 
-from ..adapter import Adapter
+from .state import State
 
 
-class BalanceStand(Adapter):
+class BalanceStand(State):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
         pass

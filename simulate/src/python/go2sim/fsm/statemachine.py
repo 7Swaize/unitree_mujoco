@@ -10,7 +10,12 @@ from iceoryx_interfaces.mappings import SportCommand, CommandKind, CommandStatus
 from ..nn import PolicyController
 from .states import State
 from .states import (
-    Move
+    Damp,
+    BalanceStand,
+    Move,
+    StandDown,
+    StandUp,
+    StopMove
 )
 
 _CommandItem = tuple[CommandKind, SportCommand, list[Any]]
@@ -45,11 +50,21 @@ class StateMachine:
         common = dict(crc=self._crc, lowcmd_pub=self._lowcmd_pub, lowcmd=self._lowcmd, policy_controller=self._policy_controller)
 
         self._states: Dict[SportCommand, State] = {
-            SportCommand.MOVE: Move(**common)
+            SportCommand.BALANCE_STAND: BalanceStand(**common),
+            SportCommand.DAMP: Damp(**common),
+            SportCommand.MOVE: Move(**common),
+            SportCommand.STAND_DOWN: StandDown(**common),
+            SportCommand.STAND_UP: StandUp(**common),
+            SportCommand.STOP_MOVE: StopMove(**common)
         }
 
         self._state_preemptions: Dict[SportCommand, CommandPreemption] = {
-            SportCommand.MOVE: CommandPreemption.REFRESHABLE
+            SportCommand.BALANCE_STAND: CommandPreemption.LOCKED,
+            SportCommand.DAMP: CommandPreemption.OVERRIDE,
+            SportCommand.MOVE: CommandPreemption.REFRESHABLE,
+            SportCommand.STAND_DOWN: CommandPreemption.LOCKED,
+            SportCommand.STAND_UP: CommandPreemption.LOCKED,
+            SportCommand.STOP_MOVE: CommandPreemption.LOCKED
         }
 
 

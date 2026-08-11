@@ -13,11 +13,10 @@ STAND_UP_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)  # From PGTT
 class StandUp(State):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
-        runtime = 0.0
-
         start_pos = self._policy_controller.deactivate()
         last_q = start_pos.copy()
 
+        runtime = 0.0
         while runtime < STAND_UP_DURATION and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
@@ -38,6 +37,6 @@ class StandUp(State):
 
             time_until_next_step = SIMULATION_DT - (time.perf_counter() - step_start)
             if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+                cancel_event.wait(time_until_next_step)
 
         self._policy_controller.override_joint_pos_no_active(last_q)

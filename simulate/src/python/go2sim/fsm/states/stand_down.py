@@ -41,6 +41,6 @@ class StandDown(State):
 
             time_until_next_step = SIMULATION_DT - (time.perf_counter() - step_start)
             if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+                cancel_event.wait(time_until_next_step)
 
         self._policy_controller.override_joint_pos_no_active(last_q)

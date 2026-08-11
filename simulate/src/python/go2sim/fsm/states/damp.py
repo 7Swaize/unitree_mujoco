@@ -33,6 +33,6 @@ class Damp(State):
 
             remaining = SIMULATION_DT - (time.perf_counter() - step_start)
             if remaining > 0:
-                time.sleep(remaining)
+                cancel_event.wait(remaining)
 
         self._policy_controller.override_joint_pos_no_active(last_q)

@@ -7,7 +7,7 @@ from typing import Optional
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from iceoryx_interfaces.mappings import SportCommand, CommandKind, CommandStatus
+from iceoryx_interfaces.mappings import CommandKind, CommandStatus
 from iceoryx_interfaces.qos import SportQoS
 from iceoryx_interfaces.sport_cmds import (
     SportCommandHeader_,
@@ -130,11 +130,3 @@ class SportBridge:
             self._iox_cmd_thread_ref = None
 
         self._state_machine.shutdown()
-
-        while True:
-            try:
-                self._adapter_stop_event.set()
-                item = self._command_queue.get_nowait()
-                self._respond(item[3], CommandStatus.CANCELLED)
-            except queue.Empty:
-                break

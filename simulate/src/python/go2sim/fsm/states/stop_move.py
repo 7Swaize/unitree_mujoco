@@ -6,7 +6,8 @@ from ...nn.policy_controller import POLICY_KP, POLICY_KD, PGTT_DEFAULT_JOINT_POS
 from .state import State
 from .constants import SIMULATION_DT
 
-STOP_SETTLE_DURATION = 0.3
+MOTOR_SETTLE_DURATION = 0.15
+STOP_SETTLE_DURATION = 0.4
 
 class StopMove(State):
     @override
@@ -35,6 +36,6 @@ class StopMove(State):
 
             remaining = SIMULATION_DT - (time.perf_counter() - step_start)
             if remaining > 0:
-                time.sleep(remaining)
+                cancel_event.wait(remaining)
 
         self._policy_controller.override_joint_pos_no_active(target)

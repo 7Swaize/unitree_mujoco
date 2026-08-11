@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelPublisher
-from iceoryx_interfaces.mappings import SportCommand, CommandKind, CommandStatus
+from iceoryx_interfaces.mappings import SportCommand, CommandKind
 
 from ..nn import PolicyController
 from .states import State
@@ -143,7 +143,7 @@ class StateMachine:
         self._state_transition_event.clear()
         self._current_command = command
 
-        worker = threading.Thread(target=self._run_state, args=(command, state), daemon=True)
+        worker = threading.Thread(target=self._run_state, args=(state,), daemon=True)
         self._current_worker_thread_ref = worker
         worker.start()
 

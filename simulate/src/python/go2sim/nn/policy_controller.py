@@ -85,6 +85,9 @@ class PolicyController:
         self._continue.clear()
         return self._last_q
 
+    def is_active(self) -> bool:
+        return self._continue.is_set()
+
     # This is always called in a deactive state.
     # In a deactive state, the tick thread never touches anything that needs locks.
     # Therefore, I think we can forgoe any need of locks.
@@ -121,7 +124,7 @@ class PolicyController:
 
             sleep_for = next_tick - time.perf_counter()
             if sleep_for > 0:
-                time.sleep(sleep_for)
+                self._shutdown.wait(sleep_for)
             else:
                 next_tick = time.perf_counter()
 

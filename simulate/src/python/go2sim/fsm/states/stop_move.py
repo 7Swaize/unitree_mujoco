@@ -7,11 +7,15 @@ from .state import State
 from .constants import SIMULATION_DT
 
 MOTOR_SETTLE_DURATION = 0.15
-STOP_SETTLE_DURATION = 0.4
+STOP_SETTLE_DURATION = 0.3
 
 class StopMove(State):
     @override
     def execute(self, cancel_event: threading.Event) -> None:
+        if self._policy_controller.is_active():
+            self._policy_controller.set_move_cmd(0.0, 0.0, 0.0)
+            cancel_event.wait(MOTOR_SETTLE_DURATION)
+
         start_pos = self._policy_controller.deactivate()
         last_q = start_pos.copy()
 
@@ -38,4 +42,4 @@ class StopMove(State):
             if remaining > 0:
                 cancel_event.wait(remaining)
 
-        self._policy_controller.override_joint_pos_no_active(target)
+        self._policy_controller.override_joint_pos_no_active(last_q)

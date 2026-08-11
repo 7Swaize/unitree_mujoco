@@ -77,8 +77,7 @@ class StateMachine:
         try:
             self._command_queue.put_nowait(item)
         except queue.Full:
-            evicted = self._command_queue.get_nowait()
-            self._respond(evicted[3], CommandStatus.SUPERSEDED)
+            _ = self._command_queue.get_nowait()
             self._command_queue.put_nowait(item)
 
 
@@ -173,6 +172,6 @@ class StateMachine:
 
         while True:
             try:
-                item = self._command_queue.get_nowait()
+                _ = self._command_queue.get_nowait()
             except queue.Empty:
                 break

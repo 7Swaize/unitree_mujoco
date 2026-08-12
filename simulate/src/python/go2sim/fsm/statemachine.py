@@ -1,6 +1,6 @@
 import queue
 import threading
-from enum import Enum, auto
+from enum import Enum, Flag, auto
 from typing import Dict, Any, Optional
 
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
@@ -27,6 +27,11 @@ class CommandPreemption(Enum):
     OVERRIDE = auto()
 
 
+class LocomotionState(Flag):
+    SITTING = auto()
+    STANDING = auto()
+
+
 class StateMachine:
     def __init__(self, crc: CRC, low_cmd: LowCmd_, lowcmd_pub: ChannelPublisher) -> None:
         self._crc: CRC = crc
@@ -42,6 +47,7 @@ class StateMachine:
         self._lock: threading.Lock = threading.Lock()
         self._command_queue: queue.Queue[_CommandItem] = queue.Queue(maxsize=3)
         self._current_command: Optional[SportCommand] = None
+        self._current_locomotion_state: LocomotionState = LocomotionState.SITTING
 
         self._init_states()
 
@@ -65,6 +71,27 @@ class StateMachine:
             SportCommand.STAND_DOWN: CommandPreemption.LOCKED,
             SportCommand.STAND_UP: CommandPreemption.LOCKED,
             SportCommand.STOP_MOVE: CommandPreemption.LOCKED
+        }
+
+        # Of course, much better FSM models exist over enum-dicts.
+        # I am just lazy and don't want to implement it right now. 
+
+        self._allowed_state_executions_during_locomotion: Dict[SportCommand, LocomotionState] = {
+            SportCommand.BALANCE_STAND: LocomotionState.STANDING,
+            SportCommand.DAMP: LocomotionState.STANDING | LocomotionState.SITTING,
+            SportCommand.MOVE: LocomotionState.STANDING,
+            SportCommand.STAND_DOWN: LocomotionState.STANDING,
+            SportCommand.STAND_UP: LocomotionState.SITTING,
+            SportCommand.STOP_MOVE: LocomotionState.STANDING
+        }
+
+        self._command_complete_locomotion_state_target: Dict[SportCommand, LocomotionState] = {
+            SportCommand.BALANCE_STAND: LocomotionState.STANDING,
+            SportCommand.DAMP: LocomotionState.SITTING,
+            SportCommand.MOVE: LocomotionState.STANDING,
+            SportCommand.STAND_DOWN: LocomotionState.SITTING,
+            SportCommand.STAND_UP: LocomotionState.STANDING,
+            SportCommand.STOP_MOVE: LocomotionState.STANDING
         }
 
 
@@ -91,6 +118,10 @@ class StateMachine:
             self._dispatch(item)
 
 
+    def _is_allowed(self, command: SportCommand) -> bool:
+        return bool(self._current_locomotion_state & self._allowed_state_executions_during_locomotion[command])
+
+
     def _is_refreshable(self, command: SportCommand) -> bool:
         return self._state_preemptions[command] == CommandPreemption.REFRESHABLE
 
@@ -104,6 +135,9 @@ class StateMachine:
 
     def _dispatch(self, item: _CommandItem) -> None:
         kind, command, args = item
+
+        if not self._is_allowed(command):
+            return
 
         worker_to_join: Optional[threading.Thread] = None
         with self._lock:
@@ -142,6 +176,7 @@ class StateMachine:
 
         self._state_transition_event.clear()
         self._current_command = command
+        self._current_locomotion_state = self._command_complete_locomotion_state_target[command]
 
         worker = threading.Thread(target=self._run_state, args=(state,), daemon=True)
         self._current_worker_thread_ref = worker

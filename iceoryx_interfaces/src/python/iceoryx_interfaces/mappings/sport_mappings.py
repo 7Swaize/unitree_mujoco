@@ -17,6 +17,4 @@ class CommandKind(IntEnum):
 
 class CommandStatus(IntEnum):
     OK = auto()
-    INTERRUPTED = auto()
-    SUPERSEDED = auto()
-    CANCELLED = auto()
+    REJECTED = auto()

@@ -3,9 +3,15 @@ import threading
 from enum import Enum, Flag, auto
 from typing import Dict, Any, Optional
 
+import iceoryx2 as iox2
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelPublisher
-from iceoryx_interfaces.mappings import SportCommand, CommandKind
+from iceoryx_interfaces.sport_cmds import CommandResponse_
+from iceoryx_interfaces.mappings import (
+    SportCommand,
+    CommandKind,
+    CommandStatus
+)
 
 from ..nn import PolicyController
 from .states import State
@@ -18,7 +24,7 @@ from .states import (
     StopMove
 )
 
-_CommandItem = tuple[CommandKind, SportCommand, list[Any]]
+_CommandItem = tuple[CommandKind, SportCommand, list[Any], iox2.ActiveRequest]
 
 
 class CommandPreemption(Enum):
@@ -134,9 +140,10 @@ class StateMachine:
 
 
     def _dispatch(self, item: _CommandItem) -> None:
-        kind, command, args = item
+        kind, command, args, active_request = item
 
         if not self._is_allowed(command):
+            self._respond(active_request, CommandStatus.REJECTED)
             return
 
         worker_to_join: Optional[threading.Thread] = None
@@ -144,10 +151,11 @@ class StateMachine:
             current = self._current_command
 
             if current is not None and current == command and self._is_refreshable(command):
-                self._refresh_current(kind, command, args)
+                self._refresh_current(kind, command, args, active_request)
                 return
 
             if current is not None and not self._can_preempt(current, command):
+                self._respond(active_request, CommandStatus.REJECTED)
                 return
 
             if current is not None:
@@ -158,18 +166,19 @@ class StateMachine:
             worker_to_join.join()
 
         with self._lock:
-            self._switch_command(kind, command, args)
+            self._switch_command(kind, command, args, active_request)
 
 
-    def _refresh_current(self, kind: CommandKind, command: SportCommand, args: list[Any]) -> None:
+    def _refresh_current(self, kind: CommandKind, command: SportCommand, args: list[Any], active_request: iox2.ActiveRequest) -> None:
         state = self._states[command]
         if kind == CommandKind.FLOAT_ARGS:
             state.set_floatargs(*map(float, args))
 
         state.execute(self._state_transition_event)
+        self._respond(active_request, CommandStatus.OK)
 
 
-    def _switch_command(self, kind: CommandKind, command: SportCommand, args: list[Any]) -> None:
+    def _switch_command(self, kind: CommandKind, command: SportCommand, args: list[Any], active_request: iox2.ActiveRequest) -> None:
         state = self._states[command]
         if kind == CommandKind.FLOAT_ARGS:
             state.set_floatargs(*map(float, args))
@@ -178,17 +187,29 @@ class StateMachine:
         self._current_command = command
         self._current_locomotion_state = self._command_complete_locomotion_state_target[command]
 
-        worker = threading.Thread(target=self._run_state, args=(state,), daemon=True)
+        worker = threading.Thread(target=self._run_state, args=(state, active_request), daemon=True)
         self._current_worker_thread_ref = worker
         worker.start()
 
 
-    def _run_state(self, state: State) -> None:
+    def _run_state(self, state: State, active_request: iox2.ActiveRequest) -> None:
         state.execute(self._state_transition_event)
 
         with self._lock:
             self._current_command = None
             self._current_worker_thread_ref = None
+
+        self._respond(active_request, CommandStatus.OK)
+
+
+    def _respond(self, active_request: iox2.ActiveRequest, status: CommandStatus) -> None:
+        if not active_request.is_connected:
+            return
+
+        response = active_request.loan_uninit()
+        response = response.write_payload(CommandResponse_(status=status))
+        response.send()
+        active_request.delete()
 
 
     def shutdown(self) -> None:

@@ -7,7 +7,7 @@ from typing import Optional
 from unitree_sdk2py.utils.crc import CRC, LowCmd_
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
-from iceoryx_interfaces.mappings import CommandKind, CommandStatus
+from iceoryx_interfaces.mappings import CommandKind
 from iceoryx_interfaces.qos import SportQoS
 from iceoryx_interfaces.sport_cmds import (
     SportCommandHeader_,
@@ -97,8 +97,7 @@ class SportBridge:
                 
                 command = active_request.user_header().contents.command
 
-                self._state_machine.receive_command((CommandKind.NO_ARGS, command, []))
-                self._respond(active_request)
+                self._state_machine.receive_command((CommandKind.NO_ARGS, command, [], active_request))
 
             while True:
                 active_request = self._floatargs_server.receive()
@@ -108,18 +107,7 @@ class SportBridge:
                 data = active_request.payload().contents
                 command = active_request.user_header().contents.command
 
-                self._state_machine.receive_command((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2, data.arg3]))
-                self._respond(active_request)
-
-
-    def _respond(self, active_request: iox2.ActiveRequest) -> None:
-        if not active_request.is_connected:
-            return
-
-        response = active_request.loan_uninit()
-        response = response.write_payload(CommandResponse_(status=CommandStatus.OK))
-        response.send()
-        active_request.delete()
+                self._state_machine.receive_command((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2, data.arg3], active_request))
 
 
     def shutdown(self) -> None:

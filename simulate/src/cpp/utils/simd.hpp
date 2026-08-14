@@ -64,7 +64,8 @@ namespace simd {
     FORCE_INLINE VecF32 BroadcastF32(const float v) noexcept { return _mm_set1_ps(v); }
     FORCE_INLINE VecF32 VecLoadF32(const float* p) noexcept { return _mm_load_ps(p); }
     FORCE_INLINE void VecStoreF32(float* p, const VecF32 v) noexcept { _mm_store_ps(p, v); }
-    FORCE_INLINE void VecStoreUI16(uint16_t* p, const VecUI16 v) noexcept { _mm_store_si128(reinterpret_cast<__m128i*>(p), v); }
+    // Store the lower half because of the upper 64-bit padding from the conversion
+    FORCE_INLINE void VecStoreUI16(uint16_t* p, const VecUI16 v) noexcept { _mm_storel_epi64(reinterpret_cast<__m128i*>(p), v); }
 #elif defined(SIMD_NEON)
     using VecF32 = float32x4_t;
     using VecUI16 = uint16x4_t;

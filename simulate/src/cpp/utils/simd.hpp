@@ -10,8 +10,6 @@
 #include <new>
 #include <stdexcept>
 
-#define SIMD_ALIGNMENT 32 // 32 byte alignment given by LCM
-
 #if defined(__AVX2__)
     #define SIMD_AVX2
     #include <immintrin.h>
@@ -26,6 +24,14 @@
     #include <arm_neon.h>
 #else
     #define SIMD_SCALAR
+#endif
+
+#if defined(SIMD_AVX2)
+    #define SIMD_ALIGNMENT 32
+#elif defined(SIMD_SSE4) || defined(SIMD_NEON)
+    #define SIMD_ALIGNMENT 16
+#else
+    #define SIMD_ALIGNMENT 1
 #endif
 
 #if defined(_MSC_VER)
@@ -43,13 +49,13 @@ namespace simd {
 
 #if defined(SIMD_AVX2)
     using VecF32 = __m256;
-    using VecUI16 = __m256i;
+    using VecUI16 = __m128i;
     constexpr std::size_t kVecWidth = 8;
 
     FORCE_INLINE VecF32 BroadcastF32(const float v) noexcept { return _mm256_set1_ps(v); }
     FORCE_INLINE VecF32 VecLoadF32(const float* p) noexcept { return _mm256_load_ps(p); }
     FORCE_INLINE void VecStoreF32(float* p, const VecF32 v) noexcept { _mm256_store_ps(p, v); }
-    FORCE_INLINE void VecStoreUI16(uint16_t* p, const VecUI16 v) noexcept { _mm256_store_si256(reinterpret_cast<__m256i*>(p), v); }
+    FORCE_INLINE void VecStoreUI16(uint16_t* p, const VecUI16 v) noexcept { _mm_store_si128(reinterpret_cast<__m128i*>(p), v); }
 #elif defined(SIMD_SSE4)
     using VecF32 = __m128;
     using VecUI16 = __m128i;

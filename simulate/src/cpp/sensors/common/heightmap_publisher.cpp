@@ -43,7 +43,7 @@ void HeightmapPublisher::PublishHeightmap() {
     header.base_y = sensor_.BaseY();
     header.yaw = sensor_.Yaw();
 
-    new (&sample.payload_mut()) HeightmapPublisher::Payload;
+    new (&sample.payload_mut()) Payload;
     auto& payload = sample.payload_mut();
 
     std::memcpy(payload.data, view.data(), HeightmapSensor::kNRays * sizeof(float));

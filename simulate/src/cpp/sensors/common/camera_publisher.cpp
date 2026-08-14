@@ -91,9 +91,9 @@ void CameraPublisher::GLFWRenderHandler::RenderLoop() {
     cam.type = mjCAMERA_FIXED;
     cam.fixedcamid = mj_name2id(outer_->model_, mjOBJ_CAMERA, "Internal Camera");
 
-    // Note: This changes clipping for all cameras. Consider using per-camera clipping if available.
-    outer_->model_->vis.map.znear = CameraPublisher::kNearClip;
-    outer_->model_->vis.map.zfar = CameraPublisher::kFarClip;
+    // Note: This changes clipping for all cameras.
+    outer_->model_->vis.map.znear = CameraPublisher::kNearClip / outer_->model_->stat.extent;
+    outer_->model_->vis.map.zfar = CameraPublisher::kFarClip / outer_->model_->stat.extent;
 
     mjrRect viewport = {0, 0, kFrameWidth, kFrameHeight};
 

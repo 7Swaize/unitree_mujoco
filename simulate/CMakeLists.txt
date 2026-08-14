@@ -16,6 +16,7 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
 find_package(Eigen3 REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(OpenGL REQUIRED)
 find_package(unitree_sdk2 REQUIRED)
 find_package(iceoryx_interfaces REQUIRED CONFIG)
 
@@ -192,6 +193,7 @@ target_link_libraries(go2sim_cpp PRIVATE
   yaml-cpp
   Eigen3::Eigen
   Boost::program_options
+  OpenGL::GL
   unitree_sdk2
   fmt
   iceoryx_interfaces::iceoryx_interfaces

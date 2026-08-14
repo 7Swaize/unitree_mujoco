@@ -39,7 +39,7 @@ private:
     static constexpr int kResX = 620;
     static constexpr int kResY = 480;
     static constexpr float kFarClip = 30.0f;
-    static constexpr float kNearClip = 0.01f;
+    static constexpr float kNearClip = 0.1f;
 
     mjModel* model_;
     mjData* data_;

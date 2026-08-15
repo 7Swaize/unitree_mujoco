@@ -186,8 +186,10 @@ class PolicyController:
 
     def shutdown(self) -> None:
         self._shutdown.set()
-        self._heightmap_receiver.shutdown()
+        self._thread_ref.join()
         self._robotstate_receiver.shutdown()
+        self._heightmap_receiver.shutdown()
+        self._heightmap_receiver.join()
 
 
 class GaitPhase:

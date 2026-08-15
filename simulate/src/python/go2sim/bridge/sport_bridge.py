@@ -1,5 +1,4 @@
 import sys
-import queue
 import threading
 import iceoryx2 as iox2
 from typing import Optional
@@ -95,7 +94,7 @@ class SportBridge:
                 if active_request is None:
                     break
                 
-                command = active_request.user_header().contents.command
+                command = int(active_request.user_header().contents.command)
 
                 self._state_machine.receive_command((CommandKind.NO_ARGS, command, [], active_request))
 
@@ -105,7 +104,7 @@ class SportBridge:
                     break
                 
                 data = active_request.payload().contents
-                command = active_request.user_header().contents.command
+                command = int(active_request.user_header().contents.command)
 
                 self._state_machine.receive_command((CommandKind.FLOAT_ARGS, command, [data.arg1, data.arg2, data.arg3], active_request))
 

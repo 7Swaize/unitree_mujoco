@@ -110,7 +110,7 @@ class StateMachine:
         try:
             self._command_queue.put_nowait(item)
         except queue.Full:
-            _ = self._command_queue.get_nowait()
+            self._respond(self._command_queue.get_nowait()[3], CommandStatus.REJECTED)
             self._command_queue.put_nowait(item)
 
 

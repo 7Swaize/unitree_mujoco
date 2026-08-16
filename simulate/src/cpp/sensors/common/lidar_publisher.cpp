@@ -35,7 +35,7 @@ void LidarPublisher::LoopInternalIPCPublish() {
     auto next_time = std::chrono::steady_clock::now();
     auto last_tick = std::chrono::steady_clock::now();
 
-    while (!sim_->exitrequest.load(std::memory_order_acquire) && !active_request_ipc_->is_connected()) {
+    while (!sim_->exitrequest.load(std::memory_order_acquire) && active_request_ipc_->is_connected()) {
         auto now = std::chrono::steady_clock::now();
         if (now < next_time) {
             std::this_thread::sleep_until(next_time);

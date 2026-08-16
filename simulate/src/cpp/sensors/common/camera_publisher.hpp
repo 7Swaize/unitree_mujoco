@@ -7,29 +7,14 @@
 #include <atomic>
 #include <cassert>
 #include <cstring>
-#include <filesystem>
 #include <memory>
 #include <thread>
 #include <vector>
 #include <stdexcept>
 
-#include "utils/yaml_utils.hpp"
 #include "utils/simd.hpp"
 #include "utils/aligned_allocator.hpp"
 #include "utils/ipc.hpp"
-
-
-struct CameraConfig {
-    int res_x = 620;
-    int res_y = 480;
-    int crop_left = 8;
-    float far_clip = 2.0f;
-    float near_clip = 0.175f;
-    int publish_fps = 60;
-
-    void Load(const std::filesystem::path& path);
-};
-
 
 class CameraPublisher {
 private:
@@ -39,7 +24,6 @@ public:
     CameraPublisher(mjModel* model,
                     mjData* data,
                     GLFWwindow* share_window,
-                    const CameraConfig& cam_cfg,
                     mujoco::Simulate* sim,
                     mujoco::SimulateMutex& sim_mutex);
 
@@ -51,9 +35,14 @@ public:
     void Run();
 
 private:
+    static constexpr int kPublishFps = 60;
+    static constexpr int kResX = 620;
+    static constexpr int kResY = 480;
+    static constexpr float kFarClip = 30.0f;
+    static constexpr float kNearClip = 0.1f;
+
     mjModel* model_;
     mjData* data_;
-    const CameraConfig cfg_;
     GLFWwindow* offscreen_window_ = nullptr;
 
     mujoco::Simulate* sim_;

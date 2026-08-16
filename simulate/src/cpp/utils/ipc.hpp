@@ -1,15 +1,19 @@
 #pragma once
 
 #include "iox2/iceoryx2.hpp"
-#include "lidar_data/LidarHeader_.hpp"
 #include "camera_data/FrameData_.hpp"
-#include "qos/lidar_qos.hpp"
+#include "lidar_data/LidarHeader_.hpp"
+#include "heightmap_data/HeightmapHeader_.hpp"
+#include "heightmap_data/HeightmapData_.hpp"
 #include "qos/camera_qos.hpp"
+#include "qos/lidar_qos.hpp"
+#include "qos/heightmap_qos.hpp"
 
 
 namespace ipc {
-    namespace lidar = iceoryx_interfaces::lidar;
     namespace camera = iceoryx_interfaces::camera;
+    namespace lidar = iceoryx_interfaces::lidar;
+    namespace heightmap = iceoryx_interfaces::heightmap;
 
     using Node = iox2::Node<iox2::ServiceType::Ipc>;
 
@@ -19,15 +23,7 @@ namespace ipc {
     template <typename TPayload, typename THeader = void>
     using PubSubPublisher = iox2::Publisher<iox2::ServiceType::Ipc, TPayload, THeader>;
 
-    struct ServiceQoS {
-        int max_publishers;
-        int max_subscribers;
-        int subscriber_max_buffer_size;
-        int subscriber_max_borrowed_samples;
-        int history_size;
-    };
-
-    inline Node MakeNode() {
+    [[nodiscard]] inline Node MakeNode() {
         return iox2::NodeBuilder()
             .signal_handling_mode(iox2::SignalHandlingMode::Disabled)
             .create<iox2::ServiceType::Ipc>()
@@ -35,36 +31,38 @@ namespace ipc {
     }
 
     template <typename TPayload, typename THeader = void>
-    PubSubFactory<TPayload, THeader> MakeService(Node& node, const char* topic_name, const ServiceQoS& qos) {
+    [[nodiscard]] PubSubFactory<TPayload, THeader> MakePubSubService(Node& node, const char* topic_name) {
         if constexpr (std::is_void_v<THeader>) {
             return node.service_builder(iox2::ServiceName::create(topic_name).value())
                 .template publish_subscribe<TPayload>()
-                .max_publishers(qos.max_publishers)
-                .max_subscribers(qos.max_subscribers)
-                .subscriber_max_buffer_size(qos.subscriber_max_buffer_size)
-                .subscriber_max_borrowed_samples(qos.subscriber_max_borrowed_samples)
-                .history_size(qos.history_size)
                 .open_or_create()
                 .value();
         } else {
             return node.service_builder(iox2::ServiceName::create(topic_name).value())
                 .template publish_subscribe<TPayload>()
                 .template user_header<THeader>()
-                .max_publishers(qos.max_publishers)
-                .max_subscribers(qos.max_subscribers)
-                .subscriber_max_buffer_size(qos.subscriber_max_buffer_size)
-                .subscriber_max_borrowed_samples(qos.subscriber_max_borrowed_samples)
-                .history_size(qos.history_size)
                 .open_or_create()
                 .value();
         }
     }
 
     template <typename TPayload, typename THeader = void>
-    PubSubPublisher<TPayload, THeader> MakePublisher(PubSubFactory<TPayload, THeader>& service) {
+    [[nodiscard]] PubSubPublisher<TPayload, THeader> MakePublisher(PubSubFactory<TPayload, THeader>& service) {
         return service.publisher_builder().create().value();
     }
 
+    template <typename TPayload, typename THeader, iox2::AllocationStrategy AllocationStrategy>
+    [[nodiscard]] PubSubPublisher<TPayload, THeader> MakePublisherDynamicData(
+        PubSubFactory<TPayload, THeader>& service,
+        const uint64_t init_slice_len)
+    {
+        return service
+            .publisher_builder()
+            .initial_max_slice_len(init_slice_len)
+            .allocation_strategy(AllocationStrategy)
+            .create()
+            .value();
+    }
 
 
     template <typename TRequest, typename TResponse, typename TRequestHeader = void, typename TResponseHeader = void>
@@ -75,8 +73,8 @@ namespace ipc {
     using RRServer =
         iox2::Server<iox2::ServiceType::Ipc, TRequest, TRequestHeader, TResponse, TResponseHeader>;
 
-
     template <typename TRequest, typename TResponse, typename TRequestHeader = void, typename TResponseHeader = void>
+    [[nodiscard]]
     RRFactory<TRequest, TResponse, TRequestHeader, TResponseHeader>
     MakeRequestResponseFactory(Node& node, const char* service_name) {
         auto builder = node.service_builder(iox2::ServiceName::create(service_name).value())
@@ -96,7 +94,7 @@ namespace ipc {
             } else {
                 return std::forward<B>(b);
             }
-        }(std::move(builder));
+        }(std::move(with_req_header));
 
         return std::move(with_resp_header).open_or_create().value();
     }
@@ -106,6 +104,7 @@ namespace ipc {
             typename TRequestHeader,
             typename TResponseHeader,
             iox2::AllocationStrategy AllocationStrategy>
+    [[nodiscard]]
     RRServer<TRequest, TResponse, TRequestHeader, TResponseHeader>
     MakeRequestResponseServerDynamicData(
         RRFactory<TRequest, TResponse, TRequestHeader, TResponseHeader>& service,

@@ -16,6 +16,7 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
 find_package(Eigen3 REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(OpenGL REQUIRED)
 find_package(unitree_sdk2 REQUIRED)
 find_package(iceoryx_interfaces REQUIRED CONFIG)
 
@@ -57,6 +58,8 @@ file(GLOB SIM_SRC
   src/cpp/sensors/common/camera_publisher.cpp
   src/cpp/sensors/common/lidar_publisher.cpp
   src/cpp/sensors/common/lidar_sensor.cpp
+  src/cpp/sensors/common/heightmap_publisher.cpp
+  src/cpp/sensors/common/heightmap_sensor.cpp
 )
 
 add_executable(go2sim_cpp ${SIM_SRC} ${GENERATED_SCAN_PATTERN_CPP} src/cpp/main.cc)
@@ -165,6 +168,10 @@ else()
       -ffast-math
       -DNDEBUG
       -fPIC
+      -flto
+    )
+    target_link_options(go2sim_cpp PRIVATE
+      -flto
     )
   endif()
 endif()
@@ -186,6 +193,7 @@ target_link_libraries(go2sim_cpp PRIVATE
   yaml-cpp
   Eigen3::Eigen
   Boost::program_options
+  OpenGL::GL
   unitree_sdk2
   fmt
   iceoryx_interfaces::iceoryx_interfaces

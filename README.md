@@ -32,6 +32,19 @@ Note:
 ## C++ Simulator
 The configuration file for the C++ simulator is located at `simulate/resources/config/`:
 
-- `camera.yaml`: Configuration file for Go2 simulator camera
 - `global.yaml`: Configuration file for the C++ simulation
 
+
+# References
+
+Translational movement would not be possible without the Phase-Guided Terrain Traversal (PGTT) work developed for the Go2 robot, as described [here](https://github.com/NtagkasAlex/phase_guided_terrain_traversal).
+
+**Citation**
+```bibtex
+@inproceedings{ntagkas2025pgtt,
+  title={PGTT: Phase-Guided Terrain Traversal for Perceptive Legged Locomotion},
+  author={Ntagkas, Alexandros and Kiourt, Chairi and Chatzilygeroudis, Konstantinos},
+  booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year={2026}
+}
+```

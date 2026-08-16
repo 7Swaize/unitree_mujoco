@@ -3,22 +3,25 @@ import threading
 import numpy as np
 from typing_extensions import override
 
-from ..adapter import Adapter
-from .constants import SIMULATION_DT, STAND_UP_JOINT_POS
+from .state import State
+from .constants import SIMULATION_DT, TRANSITION_TAU
+
+STAND_UP_DURATION = 3
+STAND_UP_JOINT_POS = np.tile(np.array([0.0, 0.9, -1.8]), 4)  # From PGTT
 
 
-class StandUp(Adapter):
+class StandUp(State):
     @override
-    def execute(self, start_pos: np.ndarray, cancel_event: threading.Event) -> np.ndarray:
-        runtime = 0.0
-        duration = 3 # Actual total time for standing up or standing down is about 1.2s
-        self._last_q = start_pos.copy()
+    def execute(self, cancel_event: threading.Event) -> None:
+        start_pos = self._policy_controller.deactivate()
+        last_q = start_pos.copy()
 
-        while runtime < duration and not cancel_event.is_set():
+        runtime = 0.0
+        while runtime < STAND_UP_DURATION and not cancel_event.is_set():
             step_start = time.perf_counter()
             runtime += SIMULATION_DT
 
-            phase = np.tanh(runtime / 1.2)
+            phase = np.tanh(runtime / TRANSITION_TAU)
 
             for i in range(12):
                 target = phase * STAND_UP_JOINT_POS[i] + (1 - phase) * start_pos[i]
@@ -27,13 +30,13 @@ class StandUp(Adapter):
                 self._lowcmd.motor_cmd[i].dq = 0.0
                 self._lowcmd.motor_cmd[i].kd = 3.5
                 self._lowcmd.motor_cmd[i].tau = 0.0
-                self._last_q[i] = target
+                last_q[i] = target
 
             self._lowcmd.crc = self._crc.Crc(self._lowcmd)
             self._lowcmd_pub.Write(self._lowcmd)
 
             time_until_next_step = SIMULATION_DT - (time.perf_counter() - step_start)
             if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+                cancel_event.wait(time_until_next_step)
 
-        return self._last_q
+        self._policy_controller.override_joint_pos_no_active(last_q)

@@ -34,9 +34,9 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
-#include "sensors/common/lidar_publisher.hpp"
-#include "sensors/common/lidar_sensor.hpp"
 #include "sensors/common/camera_publisher.hpp"
+#include "sensors/common/lidar_publisher.hpp"
+#include "sensors/common/heightmap_publisher.hpp"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
@@ -562,6 +562,11 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
       d = mj_makeData(m);
     if (d)
     {
+      int sit_key = mj_name2id(m, mjOBJ_KEY, "sit");
+      if (sit_key >= 0) {
+        mj_resetDataKeyframe(m, d, sit_key);
+      }
+      
       sim->Load(m, d, filename);
       mj_forward(m, d);
 
@@ -687,18 +692,7 @@ int main(int argc, char **argv)
   // load simulation configuration
   std::filesystem::path proj_dir = std::filesystem::path(getExecutableDir()).parent_path();
   param::config.load_from_yaml(proj_dir / "resources" / "config" / "global.yaml", proj_dir);
- 
-  // load camera configuration
-  CameraConfig cam_cfg;
-  auto cam_yaml_dir = proj_dir / "resources" / "config" / "camera.yaml";
-  if (std::filesystem::exists(cam_yaml_dir)) {
-    cam_cfg.Load(cam_yaml_dir);
-  } else {
-    std::printf("Camera configuration file not found, using defaults\n");
-  }
-
-  auto lidar_yaml_dir = proj_dir / "resources" / "config" / "lidar.yaml";
- 
+  
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
     std::make_unique<mj::GlfwAdapter>(),
@@ -718,6 +712,7 @@ int main(int argc, char **argv)
   
   std::unique_ptr<CameraPublisher> camera_pub;
   std::unique_ptr<LidarPublisher> lidar_pub;
+  std::unique_ptr<HeightmapPublisher> heightmap_pub;
  
   // start threads
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
@@ -738,38 +733,45 @@ int main(int argc, char **argv)
     }
  
     camera_pub = std::make_unique<CameraPublisher>(
-      m, d, main_window, cam_cfg, sim.get(), sim->mtx
+      m, d, main_window, sim.get(), sim->mtx
     );
  
     camera_pub->Run();
   });
  
-  // start lidar publisher after physics sim
   std::thread lidar_thread_handle([&]()
   {
     while (!sim_data_ready.load(std::memory_order_acquire)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
- 
-    LidarConfig lidar_cfg{m};
-    if (std::filesystem::exists(lidar_yaml_dir)) {
-      lidar_cfg.Load(lidar_yaml_dir);
-    } else {
-      std::printf("Lidar configuration file not found, using defaults\n");
-    }
- 
+
     lidar_pub = std::make_unique<LidarPublisher>(
-      m, d, lidar_cfg, sim.get(), sim->mtx
+      m, d, sim.get(), sim->mtx
     );
  
     lidar_pub->Run();
   });
+
+  std::thread heightmap_thread_handle([&]()
+  {
+    while (!sim_data_ready.load(std::memory_order_acquire)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    heightmap_pub = std::make_unique<HeightmapPublisher>(
+      m, d, sim.get(), sim->mtx
+    );
+
+    heightmap_pub->Run();
+  });
  
   // start simulation UI loop (blocking call)
   sim->RenderLoop();
+
   physics_thread_handle.join();
   cam_thread_handle.join();
   lidar_thread_handle.join();
+  heightmap_thread_handle.join();
  
   std::exit(0);
 }

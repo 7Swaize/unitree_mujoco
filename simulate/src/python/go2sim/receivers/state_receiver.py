@@ -1,8 +1,37 @@
 import threading
 import numpy as np
 
+from numba import njit
 from unitree_sdk2py.core.channel import ChannelSubscriber
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
+
+
+# Definition moved out here so we can allow for JIT comp. Can't take a reference to a non jitclass 'self'.
+@njit()
+def quat_to_gravity_and_yaw(w: float, x: float, y: float, z: float) -> tuple[np.ndarray, np.float32]:
+    # Builtin publishing of quaternion data from mujoco::mjData::sensordata is guaranteed to be normalized.
+    # Therefore, we can use the inhomogenous matrix specified here: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+    x2 = x + x
+    y2 = y + y
+    z2 = z + z
+
+    xx = x * x2
+    xy = x * y2
+    xz = x * z2
+    yy = y * y2
+    yz = y * z2
+    zz = z * z2
+    wx = w * x2
+    wy = w * y2
+    wz = w * z2
+
+    gravity_body = np.empty(3, dtype=np.float32)
+    gravity_body[0] = -(xz - wy)
+    gravity_body[1] = -(yz + wx)
+    gravity_body[2] = -1 + (xx + yy)
+
+    yaw = np.arctan2(xy + wz, 1 - (yy + zz))
+    return gravity_body, np.float32(yaw)
 
 
 class RobotStateReceiver:
@@ -32,7 +61,7 @@ class RobotStateReceiver:
             w, x, y, z = self._quat
             gyro = self._gyro.copy().astype(np.float32, copy=False)
 
-        gravity, yaw = self._quat_to_gravity_and_yaw(w, x, y, z)
+        gravity, yaw = quat_to_gravity_and_yaw(w, x, y, z)
         return {
             "q": q,
             "dq": dq,
@@ -50,22 +79,6 @@ class RobotStateReceiver:
             self._quat[:] = msg.imu_state.quaternion
             self._gyro[:] = msg.imu_state.gyroscope
             self._ready = True
-
-
-    def _quat_to_gravity_and_yaw(self, w: float, x: float, y: float, z: float) -> tuple[np.ndarray, float]:
-        # Builtin publishing of quaternion data from mujoco::mjData::sensordata is guaranteed to be normalized.
-        # Therefore, we can use the inhomogenous matrix specified here: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        R = np.array([
-            [1 - 2 * (y * y + z * z),   2 * (x * y - z * w),       2 * (x * z + y * w)],
-            [2 * (x * y + z * w),       1 - 2 * (x * x + z * z),   2 * (y * z - x * w)],
-            [2 * (x * z - y * w),       2 * (y * z + x * w),       1 - 2 * (x * x + y * y)],
-        ])
-
-        # Since the matrix is orthogonal, its inverse is its transpose
-        gravity_body = R.T @ np.array([0.0, 0.0, -1.0])
-
-        yaw = np.arctan2(R[1, 0], R[0, 0])
-        return gravity_body.astype(np.float32, copy=False), float(yaw)
     
 
     def shutdown(self) -> None:

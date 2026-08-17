@@ -1,38 +1,55 @@
-import torch
-import torch.nn as nn
 import numpy as np
 
+from numba import njit
+from numpy.typing import NDArray
 from pathlib import Path
 
 
-class MLP(nn.Module):
-    def __init__(self, npz_path: Path, activation_fn=nn.SiLU()) -> None:
-        super(MLP, self).__init__()
+@njit(fastmath=True)
+def mlp_forward_jit(obs, mean, std, W0, W1, W2, W3, B0, B1, B2, B3) -> np.ndarray:
+    one = np.float32(1.0)
+    x = (obs - mean) / std
+    x = x @ W0 + B0
+    x = x / (one + np.exp(-x)) # SiLU chains
+    x = x @ W1 + B1
+    x = x / (one + np.exp(-x))
+    x = x @ W2 + B2
+    x = x / (one + np.exp(-x))
+    x = x @ W3 + B3
+    loc = x[: x.shape[0] // 2]
+    return np.tanh(loc)
+
+
+class MLP:
+    def __init__(self, npz_path: Path) -> None:
         data = np.load(npz_path)
         n_layers = int(data["n_layers"])
+        self._mean = data["mean"].astype(np.float32)
+        self._std = data["std"].astype(np.float32)
 
-        self.mean = torch.tensor(data["mean"], dtype=torch.float32)
-        self.std = torch.tensor(data["std"], dtype=torch.float32)
-        self.activation = activation_fn
-        self.layers = nn.ModuleList()
+        Ws = [data[f"w{i}"].astype(np.float32) for i in range(n_layers)]
+        Bs = [data[f"b{i}"].astype(np.float32) for i in range(n_layers)]
 
-        for i in range(n_layers):
-            w = data[f"w{i}"]
-            b = data[f"b{i}"]
-            layer = nn.Linear(w.shape[0], w.shape[1])
-            layer.weight.data = torch.tensor(w.T, dtype=torch.float32)
-            layer.bias.data = torch.tensor(b, dtype=torch.float32)
-            self.layers.append(layer)
+        self._W0 = Ws[0]
+        self._W1 = Ws[1]
+        self._W2 = Ws[2]
+        self._W3 = Ws[3]
+        self._B0 = Bs[0]
+        self._B1 = Bs[1]
+        self._B2 = Bs[2]
+        self._B3 = Bs[3]
 
-    @torch.no_grad()
-    def forward(self, obs: np.ndarray) -> np.ndarray:
-        x = torch.tensor(obs, dtype=torch.float32).reshape(1, -1)
-        x = (x - self.mean) / self.std
-
-        for layer in self.layers[:-1]:
-            x = self.activation(layer(x))
-
-        x = self.layers[-1](x)
-        loc, _ = torch.chunk(x, 2, dim=-1)
-        
-        return torch.tanh(loc).squeeze(0).numpy()
+    def __call__(self, obs: NDArray[np.float32]) -> NDArray[np.float32]:
+        return mlp_forward_jit(
+            obs,
+            self._mean,
+            self._std,
+            self._W0,
+            self._W1,
+            self._W2,
+            self._W3,
+            self._B0,
+            self._B1,
+            self._B2,
+            self._B3,
+        )

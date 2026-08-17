@@ -1,13 +1,13 @@
-import numba
 import threading
 import numpy as np
 
+from numba import njit
 from unitree_sdk2py.core.channel import ChannelSubscriber
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
 
 
 # Definition moved out here so we can allow for JIT comp. Can't take a reference to a non jitclass 'self'.
-@numba.njit()
+@njit(fastmath=True)
 def quat_to_gravity_and_yaw(w: float, x: float, y: float, z: float) -> tuple[np.ndarray, np.float32]:
     # Builtin publishing of quaternion data from mujoco::mjData::sensordata is guaranteed to be normalized.
     # Therefore, we can use the inhomogenous matrix specified here: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles

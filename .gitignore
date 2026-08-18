@@ -6,6 +6,7 @@ __pycache__/
 *.venv
 *.egg-info/
 *.vscode/
+*.mpypy_cache/
 
 **/build/
 **/.vscode/

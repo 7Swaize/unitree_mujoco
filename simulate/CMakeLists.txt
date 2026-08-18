@@ -180,6 +180,7 @@ endif()
 
 target_include_directories(go2sim_cpp PRIVATE
   ${CMAKE_SOURCE_DIR}/src/cpp
+  ${CMAKE_SOURCE_DIR}/src/cpp/lodepng
   ${CMAKE_SOURCE_DIR}/mujoco/include
   ${CMAKE_SOURCE_DIR}/mujoco/simulate
 )

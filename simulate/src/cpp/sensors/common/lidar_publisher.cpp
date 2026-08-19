@@ -64,8 +64,8 @@ void LidarPublisher::PublishCloud(int64_t stamp_ns) {
     const uint64_t N = static_cast<uint64_t>(view.size());
 
     auto response = active_request_ipc_->loan_slice_uninit(N).value();
-    response.user_header_mut().cols = static_cast<uint32_t>(view.cols());
-    response.user_header_mut().rows = static_cast<uint32_t>(view.rows());
+    response.user_header_mut().cols = static_cast<uint32_t>(view.rows()); // swap because user reads (N, 3) C-cont NOT (3, N) F-cont
+    response.user_header_mut().rows = static_cast<uint32_t>(view.cols());
     response.user_header_mut().stamp_ns = stamp_ns;
 
     if constexpr (std::is_same_v<T, float>) {

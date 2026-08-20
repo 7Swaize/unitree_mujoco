@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from pathlib import Path
 
 
-@njit(fastmath=True)
+@njit(cache=True, fastmath=True)
 def mlp_forward_jit(obs, mean, std, W0, W1, W2, W3, B0, B1, B2, B3) -> NDArray[np.float32]:
     one = np.float32(1.0)
     x = (obs - mean) / std

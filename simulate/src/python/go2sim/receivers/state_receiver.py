@@ -7,7 +7,7 @@ from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowState_
 
 
 # Definition moved out here so we can allow for JIT comp. Can't take a reference to a non jitclass 'self'.
-@njit()
+@njit(cache=True)
 def quat_to_gravity_and_yaw(w: float, x: float, y: float, z: float) -> tuple[np.ndarray, np.float32]:
     # Builtin publishing of quaternion data from mujoco::mjData::sensordata is guaranteed to be normalized.
     # Therefore, we can use the inhomogenous matrix specified here: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
@@ -46,6 +46,8 @@ class RobotStateReceiver:
 
         self._sub: ChannelSubscriber = ChannelSubscriber("rt/lowstate", LowState_)
         self._sub.Init(self._on_lowstate, 10)
+
+        quat_to_gravity_and_yaw(0, 0, 0, 0) # prewarm JIT
 
 
     @property

@@ -51,6 +51,8 @@ class PolicyController:
         self._robotstate_receiver: RobotStateReceiver = RobotStateReceiver()
         self._phase: GaitPhase = GaitPhase()
 
+        self._nn(np.zeros(153, dtype=np.float32)) # prewarm JIT with null obs-vec dims
+
         self._target_q = PGTT_DEFAULT_JOINT_POS.copy()
         self._last_q: np.ndarray = PGTT_DEFAULT_JOINT_POS.copy()
         self._last_action: np.ndarray = np.zeros(12, dtype=np.float32)

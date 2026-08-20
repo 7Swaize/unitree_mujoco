@@ -1,4 +1,3 @@
-import queue
 import threading
 from enum import Enum, Flag, auto
 from typing import Dict, Any, Optional
@@ -14,6 +13,8 @@ from iceoryx_interfaces.mappings import (
 )
 
 from ..nn import PolicyController
+from .typing import _CommandItem
+from .priority_queue import CommandPriorityQueue
 from .states import State
 from .states import (
     Damp,
@@ -23,9 +24,6 @@ from .states import (
     StandUp,
     StopMove
 )
-
-_CommandItem = tuple[CommandKind, SportCommand, list[Any], iox2.ActiveRequest]
-
 
 class CommandPreemption(Enum):
     REFRESHABLE = auto()
@@ -50,12 +48,17 @@ class StateMachine:
         self._shutdown_event: threading.Event = threading.Event()
         self._state_transition_event: threading.Event = threading.Event()
 
+        self._init_states()
+
         self._lock: threading.Lock = threading.Lock()
-        self._command_queue: queue.Queue[_CommandItem] = queue.Queue(maxsize=3)
         self._current_command: Optional[SportCommand] = None
         self._current_locomotion_state: LocomotionState = LocomotionState.SITTING
-
-        self._init_states()
+        self._command_queue: CommandPriorityQueue = CommandPriorityQueue(
+            maxsize=3,
+            priority={
+                cmd: self._preemption_prority[pre] for cmd, pre in self._state_preemptions.items()
+            }
+        )
 
 
     def _init_states(self) -> None:
@@ -79,8 +82,11 @@ class StateMachine:
             SportCommand.STOP_MOVE: CommandPreemption.LOCKED
         }
 
-        # Of course, much better FSM models exist over enum-dicts.
-        # I am just lazy and don't want to implement it right now. 
+        self._preemption_prority: Dict[SportCommand, int] = {
+            CommandPreemption.REFRESHABLE: 0,
+            CommandPreemption.LOCKED: 1,
+            CommandPreemption.OVERRIDE: 2
+        }
 
         self._allowed_state_executions_during_locomotion: Dict[SportCommand, LocomotionState] = {
             SportCommand.BALANCE_STAND: LocomotionState.STANDING,
@@ -107,18 +113,13 @@ class StateMachine:
 
 
     def receive_command(self, item: _CommandItem) -> None:
-        try:
-            self._command_queue.put_nowait(item)
-        except queue.Full:
-            self._respond(self._command_queue.get_nowait()[3], CommandStatus.REJECTED)
-            self._command_queue.put_nowait(item)
+        self._command_queue.put(item, lambda ar: self._respond(ar, CommandStatus.REJECTED))
 
 
     def _command_recv_thread(self) -> None:
         while not self._shutdown_event.is_set():
-            try:
-                item = self._command_queue.get(timeout=0.1)
-            except queue.Empty:
+            item = self._command_queue.get(timeout=0.1)
+            if item is None:
                 continue
 
             self._dispatch(item)
@@ -226,8 +227,5 @@ class StateMachine:
 
         self._policy_controller.shutdown()
 
-        while True:
-            try:
-                _ = self._command_queue.get_nowait()
-            except queue.Empty:
-                break
+        for item in self._command_queue.flush():
+            self._respond(item[3], CommandStatus.REJECTED)

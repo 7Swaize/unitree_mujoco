@@ -31,7 +31,7 @@
 #elif defined(SIMD_SSE4) || defined(SIMD_NEON)
     #define SIMD_ALIGNMENT 16
 #else
-    #define SIMD_ALIGNMENT 1
+    #define SIMD_ALIGNMENT alignof(std::max_align_t)
 #endif
 
 #if defined(_MSC_VER)

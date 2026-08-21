@@ -38,16 +38,16 @@ class RobotStateReceiver:
     def __init__(self) -> None:
         self._lock: threading.Lock = threading.Lock()
 
-        self._q: np.ndarray = np.zeros(12, dtype=np.float64)
-        self._dq: np.ndarray = np.zeros(12, dtype=np.float64)
-        self._quat: np.ndarray = np.array([1.0, 0.0, 0.0, 0.0])
-        self._gyro: np.ndarray = np.zeros(3, dtype=np.float64)
+        self._q: np.ndarray = np.zeros(12, dtype=np.float32)
+        self._dq: np.ndarray = np.zeros(12, dtype=np.float32)
+        self._quat: np.ndarray = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        self._gyro: np.ndarray = np.zeros(3, dtype=np.float32)
         self._ready = False
 
         self._sub: ChannelSubscriber = ChannelSubscriber("rt/lowstate", LowState_)
         self._sub.Init(self._on_lowstate, 10)
 
-        quat_to_gravity_and_yaw(0, 0, 0, 0) # prewarm JIT
+        quat_to_gravity_and_yaw(np.float32(0.0), np.float32(0.0), np.float32(0.0), np.float32(0.0)) # prewarm JIT
 
 
     @property
@@ -69,7 +69,7 @@ class RobotStateReceiver:
             "dq": dq,
             "gyro": gyro,
             "gravity": gravity,
-            "yaw": yaw,
+            "yaw": yaw
         }
 
 

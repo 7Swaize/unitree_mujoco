@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -140,9 +141,10 @@ struct ToLinDistMap {
 
     ToLinDistMap(const float z_near, const float z_far);
 
-    [[nodiscard]] inline uint16_t scalar(const float d) const noexcept {
+    [[nodiscard]]
+    inline uint16_t scalar(const float d) const noexcept {
         const float lin_dist = (kZFnProdF / (kZFarF - d * kZFnSubF)) * kMmToMConv;
-        const float rounded = lin_dist + 0.5f;
+        const float rounded = std::nearbyint(lin_dist);
         const float clamped = std::clamp(rounded, 0.0f, static_cast<float>(std::numeric_limits<uint16_t>::max()));
         return static_cast<uint16_t>(clamped);
     }
